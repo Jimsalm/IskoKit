@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} ${lora.variable} ${robotoMono.variable} h-full`}
+      className={`${plusJakartaSans.variable} ${lora.variable} ${robotoMono.variable} dark h-full`}
     >
       <body className="min-h-full bg-background font-sans text-foreground antialiased">
         {children}
