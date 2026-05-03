@@ -1,6 +1,10 @@
 import type { EmailOtpType } from "@supabase/supabase-js"
 import { type NextRequest, NextResponse } from "next/server"
 
+import {
+  passwordRecoveryCookieName,
+  passwordRecoveryMaxAge,
+} from "@/features/auth/constants"
 import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
@@ -16,6 +20,22 @@ export async function GET(request: NextRequest) {
     })
 
     if (!error) {
+      if (type === "recovery") {
+        const response = NextResponse.redirect(
+          new URL("/reset-password", request.url),
+        )
+
+        response.cookies.set(passwordRecoveryCookieName, "1", {
+          httpOnly: true,
+          maxAge: passwordRecoveryMaxAge,
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+        })
+
+        return response
+      }
+
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
   }
