@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 
-import { loginSchema, registerSchema } from "@/lib/auth/validation"
+import { loginSchema, registerSchema } from "@/features/auth/schemas"
 import { createClient } from "@/lib/supabase/server"
 
 export type LoginActionState = {

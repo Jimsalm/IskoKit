@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useActionState } from "react"
 import { LoaderCircleIcon } from "lucide-react"
 
-import { registerAction, type RegisterActionState } from "@/app/actions/auth"
+import { registerAction, type RegisterActionState } from "@/features/auth/actions"
 import { Button } from "@/components/ui/button"
 import {
   Card,
