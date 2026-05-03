@@ -129,6 +129,10 @@ export async function logoutAction() {
   redirect("/login")
 }
 
+export async function googleSignInAction() {
+  // TODO: Implement Google sign in
+}
+
 export async function forgotPasswordAction(
   _prevState: ForgotPasswordActionState,
   formData: FormData,

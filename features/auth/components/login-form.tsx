@@ -4,17 +4,14 @@ import Link from "next/link"
 import { useActionState } from "react"
 import { LoaderCircleIcon } from "lucide-react"
 
-import { loginAction, type LoginActionState } from "@/features/auth/actions"
-import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  loginAction,
+  type LoginActionState,
+} from "@/features/auth/actions"
+import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
 
 const initialState: LoginActionState = {
   message: "",
@@ -34,16 +31,25 @@ export function LoginForm() {
   const passwordError = state.errors?.password?.[0]
 
   return (
-    <Card className="w-full max-w-sm gap-5 rounded-3xl border-border bg-card px-6 py-7 text-card-foreground shadow-2xl ring-0">
-      <CardHeader className="gap-2 px-0">
-        <CardTitle className="text-2xl leading-tight font-semibold">
-          Welcome back
-        </CardTitle>
-        <CardDescription className="max-w-xs text-sm leading-5">
-          Enter your email and password to sign in
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="px-0">
+    <div className="flex w-full flex-col gap-8">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-3">
+          <div className="grid size-10 place-items-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg">
+            I
+          </div>
+          <span className="text-lg font-semibold">IskoKit</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl leading-tight font-semibold">
+            Welcome back
+          </h1>
+          <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+            Enter your email and password to sign in
+          </p>
+        </div>
+      </div>
+
+      <div className="text-card-foreground">
         <form action={formAction} className="flex flex-col gap-5">
           <FieldGroup className="gap-4">
             <Field className="gap-2" data-invalid={Boolean(emailError)}>
@@ -106,13 +112,31 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Button asChild variant="link" className="h-auto p-0">
-            <Link href="/register">Create one</Link>
-          </Button>
-        </p>
-      </CardContent>
-    </Card>
+        <div className="my-5 flex items-center gap-3">
+          <Separator className="min-w-0 flex-1 shrink data-horizontal:w-auto" />
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            OR
+          </span>
+          <Separator className="min-w-0 flex-1 shrink data-horizontal:w-auto" />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="w-full rounded-full"
+          disabled
+        >
+          Continue with Google
+        </Button>
+      </div>
+
+      <p className="text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{" "}
+        <Button asChild variant="link" className="h-auto p-0">
+          <Link href="/register">Create one</Link>
+        </Button>
+      </p>
+    </div>
   )
 }

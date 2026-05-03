@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { AuthShell } from "@/features/auth/components/auth-shell"
 import { RegisterForm } from "@/features/auth/components/register-form"
 import { createClient } from "@/lib/supabase/server"
 
@@ -12,8 +13,8 @@ export default async function RegisterPage() {
   }
 
   return (
-    <main className="dark grid min-h-screen place-items-center bg-background px-4 py-10">
+    <AuthShell>
       <RegisterForm />
-    </main>
+    </AuthShell>
   )
 }
