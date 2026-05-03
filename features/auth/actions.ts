@@ -98,3 +98,11 @@ export async function registerAction(
 
   redirect("/dashboard")
 }
+
+export async function logoutAction() {
+  const supabase = await createClient()
+
+  await supabase.auth.signOut()
+
+  redirect("/login")
+}
