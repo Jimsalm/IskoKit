@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 
+import { AppProviders } from "@/features/app-shell/components/app-providers"
 import { AppNavbar } from "@/features/app-shell/components/app-navbar"
 import { createClient } from "@/lib/supabase/server"
 
@@ -16,9 +17,11 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-background text-foreground">
       <AppNavbar userEmail={userEmail} />
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-        {children}
-      </main>
+      <AppProviders>
+        <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+          {children}
+        </main>
+      </AppProviders>
     </div>
   )
 }
