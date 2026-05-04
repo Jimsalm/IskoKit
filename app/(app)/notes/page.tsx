@@ -1,6 +1,8 @@
-import { ToolPlaceholder } from "@/features/app-shell/components/tool-placeholder"
-import { getAppTool } from "@/features/app-shell/tools"
+import { requireAuth } from "@/features/auth/server"
+import { NotesPageClient } from "@/features/notes/components/notes-page-client"
 
-export default function NotesPage() {
-  return <ToolPlaceholder tool={getAppTool("/notes")} />
+export default async function NotesPage() {
+  await requireAuth()
+
+  return <NotesPageClient />
 }
