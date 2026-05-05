@@ -1,6 +1,8 @@
-import { ToolPlaceholder } from "@/features/app-shell/components/tool-placeholder"
-import { getAppTool } from "@/features/app-shell/tools"
+import { requireAuth } from "@/features/auth/server"
+import { FlashcardsPageClient } from "@/features/flashcards/components/flashcards-page-client"
 
-export default function FlashcardsPage() {
-  return <ToolPlaceholder tool={getAppTool("/flashcards")} />
+export default async function FlashcardsPage() {
+  await requireAuth()
+
+  return <FlashcardsPageClient />
 }
