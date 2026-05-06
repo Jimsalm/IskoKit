@@ -34,8 +34,8 @@ export const appToolGroups = [
       },
       {
         href: "/flashcards",
-        label: "AI Flashcards",
-        description: "Generate flashcards from readings and notes.",
+        label: "Flashcards",
+        description: "Build decks, generate cards, and review what is due.",
         icon: BrainIcon,
       },
     ],
