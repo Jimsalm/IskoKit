@@ -84,7 +84,7 @@ export type UpdateGwaRecordValues = {
   values: SaveGwaRecordValues
 }
 
-export type GwaRecord = {
+export type GwaRecordSummary = {
   id: string
   userId: string
   semester: string
@@ -94,6 +94,9 @@ export type GwaRecord = {
   totalSubjects: number
   createdAt: string
   updatedAt: string
+}
+
+export type GwaRecord = GwaRecordSummary & {
   subjects: GwaSubject[]
 }
 

@@ -3,6 +3,7 @@ import type {
   GwaGrade,
   GwaRecord,
   GwaRecordRow,
+  GwaRecordSummary,
   GwaRecordWithSubjectsRow,
   GwaSubject,
   GwaSubjectRow,
@@ -58,11 +59,7 @@ function toSubject(row: GwaSubjectRow): GwaSubject {
   }
 }
 
-function toRecord(row: GwaRecordWithSubjectsRow): GwaRecord {
-  const subjects = [...(row.gwa_subjects ?? [])]
-    .sort((first, second) => first.created_at.localeCompare(second.created_at))
-    .map(toSubject)
-
+function toRecordSummary(row: GwaRecordRow): GwaRecordSummary {
   return {
     id: row.id,
     userId: row.user_id,
@@ -73,6 +70,16 @@ function toRecord(row: GwaRecordWithSubjectsRow): GwaRecord {
     totalSubjects: row.total_subjects,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+function toRecord(row: GwaRecordWithSubjectsRow): GwaRecord {
+  const subjects = [...(row.gwa_subjects ?? [])]
+    .sort((first, second) => first.created_at.localeCompare(second.created_at))
+    .map(toSubject)
+
+  return {
+    ...toRecordSummary(row),
     subjects,
   }
 }
@@ -97,11 +104,11 @@ async function getCurrentUserId() {
   return data.user.id
 }
 
-export async function listGwaRecords(): Promise<GwaRecord[]> {
+export async function listGwaRecords(): Promise<GwaRecordSummary[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("gwa_records")
-    .select(recordWithSubjectsSelect)
+    .select(recordSelect)
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -111,7 +118,25 @@ export async function listGwaRecords(): Promise<GwaRecord[]> {
     )
   }
 
-  return ((data ?? []) as GwaRecordWithSubjectsRow[]).map(toRecord)
+  return ((data ?? []) as GwaRecordRow[]).map(toRecordSummary)
+}
+
+export async function getGwaRecord(id: string): Promise<GwaRecord> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("gwa_records")
+    .select(recordWithSubjectsSelect)
+    .eq("id", id)
+    .single()
+
+  if (error) {
+    throwAppError(
+      error,
+      gwaErrorOptions("Could not load GWA record details. Please try again."),
+    )
+  }
+
+  return toRecord(data as GwaRecordWithSubjectsRow)
 }
 
 export async function createGwaRecord(

@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import type { GwaRecord } from "@/features/gwa/types"
+import type { GwaRecordSummary } from "@/features/gwa/types"
 
 export function GwaRecordDeleteDialog({
   record,
@@ -20,7 +20,7 @@ export function GwaRecordDeleteDialog({
   onOpenChange,
   onConfirm,
 }: {
-  record: GwaRecord | null
+  record: GwaRecordSummary | null
   isDeleting: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => Promise<void>

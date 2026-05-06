@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   CalculatorIcon,
   LoaderCircleIcon,
@@ -21,15 +22,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { gwaMutationError } from "@/features/gwa/api"
+import { getGwaRecord, gwaMutationError } from "@/features/gwa/api"
 import { GwaHistorySection } from "@/features/gwa/components/gwa-history-section"
 import { GwaRecordDeleteDialog } from "@/features/gwa/components/gwa-record-delete-dialog"
 import { GwaRecordDetailsDialog } from "@/features/gwa/components/gwa-record-details-dialog"
 import { GwaResultCard } from "@/features/gwa/components/gwa-result-card"
 import { GwaSubjectsCard } from "@/features/gwa/components/gwa-subjects-card"
 import {
+  gwaRecordQueryKey,
   useCreateGwaRecord,
   useDeleteGwaRecord,
+  useGwaRecord,
   useGwaRecords,
   useUpdateGwaRecord,
 } from "@/features/gwa/hooks"
@@ -42,6 +45,7 @@ import { gwaCalculationSchema } from "@/features/gwa/schemas"
 import type {
   GwaCalculationResult,
   GwaRecord,
+  GwaRecordSummary,
   GwaSubjectDraft,
   GwaSubjectDraftErrors,
   SaveGwaRecordValues,
@@ -212,9 +216,14 @@ export function GwaCalculatorPageClient() {
   const [errors, setErrors] = useState<GwaFormErrors>(emptyErrors)
   const [result, setResult] = useState<GwaCalculationResult | null>(null)
   const [editingRecord, setEditingRecord] = useState<GwaRecord | null>(null)
-  const [selectedRecord, setSelectedRecord] = useState<GwaRecord | null>(null)
-  const [deletingRecord, setDeletingRecord] = useState<GwaRecord | null>(null)
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
+  const [deletingRecord, setDeletingRecord] = useState<GwaRecordSummary | null>(
+    null,
+  )
+  const [loadingRecordId, setLoadingRecordId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   const recordsQuery = useGwaRecords()
+  const selectedRecordQuery = useGwaRecord(selectedRecordId)
   const createMutation = useCreateGwaRecord()
   const updateMutation = useUpdateGwaRecord()
   const deleteMutation = useDeleteGwaRecord()
@@ -245,7 +254,7 @@ export function GwaCalculatorPageClient() {
     setIsCalculatorOpen(true)
   }
 
-  function openEditCalculator(record: GwaRecord) {
+  function fillCalculatorFromRecord(record: GwaRecord) {
     setEditingRecord(record)
     setSemester(record.semester)
     setSchoolYear(record.schoolYear)
@@ -253,6 +262,23 @@ export function GwaCalculatorPageClient() {
     setErrors(emptyErrors)
     setResult(getResultFromRecord(record))
     setIsCalculatorOpen(true)
+  }
+
+  async function openEditCalculator(record: GwaRecordSummary) {
+    setLoadingRecordId(record.id)
+
+    try {
+      const detailedRecord = await queryClient.fetchQuery({
+        queryKey: gwaRecordQueryKey(record.id),
+        queryFn: () => getGwaRecord(record.id),
+      })
+
+      fillCalculatorFromRecord(detailedRecord)
+    } catch (error) {
+      toast.error(gwaMutationError(error))
+    } finally {
+      setLoadingRecordId(null)
+    }
   }
 
   function handleCalculatorOpenChange(open: boolean) {
@@ -378,6 +404,9 @@ export function GwaCalculatorPageClient() {
     try {
       await deleteMutation.mutateAsync(deletingRecord.id)
       toast.success("GWA record deleted.")
+      if (selectedRecordId === deletingRecord.id) {
+        setSelectedRecordId(null)
+      }
       setDeletingRecord(null)
     } catch (error) {
       toast.error(gwaMutationError(error))
@@ -407,9 +436,10 @@ export function GwaCalculatorPageClient() {
         errorMessage={gwaMutationError(recordsQuery.error)}
         onRetry={() => void recordsQuery.refetch()}
         onCreate={openCreateCalculator}
-        onView={setSelectedRecord}
-        onEdit={openEditCalculator}
+        onView={(record) => setSelectedRecordId(record.id)}
+        onEdit={(record) => void openEditCalculator(record)}
         onDelete={setDeletingRecord}
+        loadingRecordId={loadingRecordId}
       />
 
       <Dialog open={isCalculatorOpen} onOpenChange={handleCalculatorOpenChange}>
@@ -480,10 +510,18 @@ export function GwaCalculatorPageClient() {
       </Dialog>
 
       <GwaRecordDetailsDialog
-        record={selectedRecord}
+        open={Boolean(selectedRecordId)}
+        record={selectedRecordQuery.data ?? null}
+        isLoading={Boolean(selectedRecordId) && selectedRecordQuery.isPending}
+        errorMessage={
+          selectedRecordQuery.isError
+            ? gwaMutationError(selectedRecordQuery.error)
+            : undefined
+        }
+        onRetry={() => void selectedRecordQuery.refetch()}
         onOpenChange={(open) => {
           if (!open) {
-            setSelectedRecord(null)
+            setSelectedRecordId(null)
           }
         }}
       />
