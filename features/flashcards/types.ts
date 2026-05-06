@@ -129,6 +129,48 @@ export type FlashcardStatsRow = {
   next_review_at: string | null
 }
 
+export type FlashcardNoteSource = {
+  id: string
+  title: string
+  subject: string | null
+}
+
+export type FlashcardNoteSourceRow = {
+  id: string
+  title: string
+  subject: string | null
+}
+
+export type FlashcardSummarySource = {
+  id: string
+  title: string
+}
+
+export type FlashcardSummarySourceRow = {
+  id: string
+  title: string
+}
+
+export type FlashcardSourceContent = {
+  id: string
+  title: string
+  subject?: string | null
+  content: string
+}
+
+export type FlashcardNoteSourceContentRow = {
+  id: string
+  title: string
+  subject: string | null
+  content: string
+}
+
+export type FlashcardSummarySourceContentRow = {
+  id: string
+  title: string
+  content: string
+}
+
 export type FlashcardReview = {
   id: string
   userId: string

@@ -1,15 +1,20 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 
-import { useSummaries } from "@/features/ai-summarizer/hooks"
-import { flashcardMutationError } from "@/features/flashcards/api"
+import {
+  flashcardMutationError,
+  getFlashcardNoteSourceContent,
+  getFlashcardSummarySourceContent,
+} from "@/features/flashcards/api"
 import { FlashcardGenerator } from "@/features/flashcards/components/flashcard-generator"
 import { FlashcardPreviewList } from "@/features/flashcards/components/flashcard-preview-list"
 import { generateFlashcardsRequestSchema } from "@/features/flashcards/schemas"
 import {
   useCreateGeneratedFlashcards,
+  useFlashcardNoteSources,
+  useFlashcardSummarySources,
   useGenerateFlashcards,
 } from "@/features/flashcards/hooks"
 import type {
@@ -19,7 +24,6 @@ import type {
   FlashcardPreview,
   FlashcardType,
 } from "@/features/flashcards/types"
-import { useNotes } from "@/features/notes/hooks"
 import {
   Dialog,
   DialogContent,
@@ -73,35 +77,68 @@ export function AiFlashcardDialog({
   const [count, setCount] = useState<FlashcardCount>(10)
   const [sourceError, setSourceError] = useState("")
   const [previewCards, setPreviewCards] = useState<FlashcardPreview[]>([])
-  const notesQuery = useNotes()
-  const summariesQuery = useSummaries()
+  const dialogSessionRef = useRef(0)
+  const notesQuery = useFlashcardNoteSources({ enabled: open })
+  const summariesQuery = useFlashcardSummarySources({ enabled: open })
   const generateMutation = useGenerateFlashcards()
   const createMutation = useCreateGeneratedFlashcards(deckId)
-  const notes = useMemo(() => notesQuery.data ?? [], [notesQuery.data])
-  const summaries = useMemo(
-    () => summariesQuery.data ?? [],
-    [summariesQuery.data],
-  )
-  const selectedNote = notes.find((note) => note.id === selectedNoteId)
-  const selectedSummary = summaries.find(
-    (summary) => summary.id === selectedSummaryId,
-  )
-  const sourceContent =
-    sourceType === "manual_text"
-      ? manualText
-      : sourceType === "note"
-        ? selectedNote?.content ?? ""
-        : selectedSummary?.content ?? ""
+  const notes = notesQuery.data ?? []
+  const summaries = summariesQuery.data ?? []
   const sourceId =
     sourceType === "note"
-      ? selectedNote?.id ?? null
+      ? selectedNoteId || null
       : sourceType === "summary"
-        ? selectedSummary?.id ?? null
+        ? selectedSummaryId || null
         : null
 
   function clearGeneratedPreview() {
     setPreviewCards([])
     setSourceError("")
+  }
+
+  function resetDialogState() {
+    dialogSessionRef.current += 1
+    setSourceType("manual_text")
+    setManualText("")
+    setSelectedNoteId("")
+    setSelectedSummaryId("")
+    setCardType("qa")
+    setDifficulty("medium")
+    setCount(10)
+    setSourceError("")
+    setPreviewCards([])
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      resetDialogState()
+    }
+
+    onOpenChange(nextOpen)
+  }
+
+  async function getSourceContent() {
+    if (sourceType === "manual_text") {
+      return manualText
+    }
+
+    if (sourceType === "note") {
+      if (!selectedNoteId) {
+        return ""
+      }
+
+      const source = await getFlashcardNoteSourceContent(selectedNoteId)
+
+      return source.content
+    }
+
+    if (!selectedSummaryId) {
+      return ""
+    }
+
+    const source = await getFlashcardSummarySourceContent(selectedSummaryId)
+
+    return source.content
   }
 
   function handleSourceTypeChange(nextSourceType: FlashcardGenerationSourceType) {
@@ -110,25 +147,38 @@ export function AiFlashcardDialog({
   }
 
   async function handleGenerate() {
-    const payload = {
-      sourceType,
-      sourceId,
-      content: sourceContent,
-      cardType,
-      difficulty,
-      count,
-    }
-    const parsed = generateFlashcardsRequestSchema.safeParse(payload)
-
-    if (!parsed.success) {
-      setSourceError(getZodMessage(parsed.error))
-      return
-    }
-
-    setSourceError("")
+    const dialogSession = dialogSessionRef.current
 
     try {
+      const content = await getSourceContent()
+
+      if (dialogSession !== dialogSessionRef.current) {
+        return
+      }
+
+      const payload = {
+        sourceType,
+        sourceId,
+        content,
+        cardType,
+        difficulty,
+        count,
+      }
+      const parsed = generateFlashcardsRequestSchema.safeParse(payload)
+
+      if (!parsed.success) {
+        setSourceError(getZodMessage(parsed.error))
+        return
+      }
+
+      setSourceError("")
+
       const result = await generateMutation.mutateAsync(parsed.data)
+
+      if (dialogSession !== dialogSessionRef.current) {
+        return
+      }
+
       setPreviewCards(
         result.flashcards.map((flashcard, index) => ({
           ...flashcard,
@@ -137,6 +187,10 @@ export function AiFlashcardDialog({
       )
       toast.success("Flashcards generated.")
     } catch (error) {
+      if (dialogSession !== dialogSessionRef.current) {
+        return
+      }
+
       setSourceError(flashcardMutationError(error))
     }
   }
@@ -173,15 +227,14 @@ export function AiFlashcardDialog({
         flashcards: previewCards.map(toGeneratedFlashcard),
       })
       toast.success("Flashcards saved to deck.")
-      setPreviewCards([])
-      onOpenChange(false)
+      handleOpenChange(false)
     } catch (error) {
       toast.error(flashcardMutationError(error))
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[min(90vh,900px)] overflow-y-auto sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Generate AI flashcards</DialogTitle>

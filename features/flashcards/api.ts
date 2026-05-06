@@ -23,10 +23,17 @@ import type {
   FlashcardDeckWithStats,
   FlashcardDifficulty,
   FlashcardGenerationSourceType,
+  FlashcardNoteSource,
+  FlashcardNoteSourceContentRow,
+  FlashcardNoteSourceRow,
   FlashcardReviewRow,
   FlashcardRow,
   FlashcardSourceType,
+  FlashcardSourceContent,
   FlashcardStatsRow,
+  FlashcardSummarySource,
+  FlashcardSummarySourceContentRow,
+  FlashcardSummarySourceRow,
   FlashcardType,
   GenerateFlashcardsResult,
   GenerateFlashcardsValues,
@@ -52,6 +59,14 @@ const flashcardsSelect =
 
 const flashcardStatsSelect =
   "deck_id,correct_count,incorrect_count,next_review_at"
+
+const noteSourceSelect = "id,title,subject"
+
+const noteSourceContentSelect = "id,title,subject,content"
+
+const summarySourceSelect = "id,title"
+
+const summarySourceContentSelect = "id,title,content"
 
 function getErrorMessage(error: unknown) {
   if (axios.isAxiosError(error)) {
@@ -123,6 +138,44 @@ function toFlashcardStatsItem(row: FlashcardStatsRow): FlashcardStatsItem {
   }
 }
 
+function toNoteSource(row: FlashcardNoteSourceRow): FlashcardNoteSource {
+  return {
+    id: row.id,
+    title: row.title,
+    subject: row.subject,
+  }
+}
+
+function toSummarySource(
+  row: FlashcardSummarySourceRow,
+): FlashcardSummarySource {
+  return {
+    id: row.id,
+    title: row.title,
+  }
+}
+
+function toNoteSourceContent(
+  row: FlashcardNoteSourceContentRow,
+): FlashcardSourceContent {
+  return {
+    id: row.id,
+    title: row.title,
+    subject: row.subject,
+    content: row.content,
+  }
+}
+
+function toSummarySourceContent(
+  row: FlashcardSummarySourceContentRow,
+): FlashcardSourceContent {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+  }
+}
+
 function getDeckStats(flashcards: FlashcardStatsItem[]): FlashcardDeckStats {
   const correctReviews = flashcards.reduce(
     (total, flashcard) => total + flashcard.correctCount,
@@ -179,6 +232,72 @@ export async function generateFlashcards(values: GenerateFlashcardsValues) {
   )
 
   return data
+}
+
+export async function listFlashcardNoteSources(): Promise<
+  FlashcardNoteSource[]
+> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("notes")
+    .select(noteSourceSelect)
+    .order("updated_at", { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as FlashcardNoteSourceRow[]).map(toNoteSource)
+}
+
+export async function listFlashcardSummarySources(): Promise<
+  FlashcardSummarySource[]
+> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("summaries")
+    .select(summarySourceSelect)
+    .order("updated_at", { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as FlashcardSummarySourceRow[]).map(toSummarySource)
+}
+
+export async function getFlashcardNoteSourceContent(
+  id: string,
+): Promise<FlashcardSourceContent> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("notes")
+    .select(noteSourceContentSelect)
+    .eq("id", id)
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return toNoteSourceContent(data as FlashcardNoteSourceContentRow)
+}
+
+export async function getFlashcardSummarySourceContent(
+  id: string,
+): Promise<FlashcardSourceContent> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("summaries")
+    .select(summarySourceContentSelect)
+    .eq("id", id)
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return toSummarySourceContent(data as FlashcardSummarySourceContentRow)
 }
 
 export async function listDecksWithStats(): Promise<FlashcardDeckWithStats[]> {

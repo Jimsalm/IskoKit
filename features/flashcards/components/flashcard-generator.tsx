@@ -7,7 +7,6 @@ import {
   TriangleAlertIcon,
 } from "lucide-react"
 
-import type { Summary } from "@/features/ai-summarizer/types"
 import {
   flashcardCounts,
   flashcardDifficulties,
@@ -18,6 +17,8 @@ import type {
   FlashcardCount,
   FlashcardDifficulty,
   FlashcardGenerationSourceType,
+  FlashcardNoteSource,
+  FlashcardSummarySource,
   FlashcardType,
 } from "@/features/flashcards/types"
 import {
@@ -27,7 +28,6 @@ import {
   maxFlashcardSourceLength,
   minFlashcardSourceLength,
 } from "@/features/flashcards/schemas"
-import type { Note } from "@/features/notes/types"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -47,12 +47,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-
-function getPreview(content: string) {
-  const preview = content.replace(/\s+/g, " ").trim()
-
-  return preview.length > 260 ? `${preview.slice(0, 260)}...` : preview
-}
 
 export function FlashcardGenerator({
   sourceType,
@@ -81,8 +75,8 @@ export function FlashcardGenerator({
   manualText: string
   selectedNoteId: string
   selectedSummaryId: string
-  notes: Note[]
-  summaries: Summary[]
+  notes: FlashcardNoteSource[]
+  summaries: FlashcardSummarySource[]
   isNotesLoading: boolean
   isSummariesLoading: boolean
   cardType: FlashcardType
@@ -103,11 +97,7 @@ export function FlashcardGenerator({
   const selectedSummary = summaries.find(
     (summary) => summary.id === selectedSummaryId,
   )
-  const sourceContent =
-    sourceType === "manual_text"
-      ? manualText
-      : selectedNote?.content ?? selectedSummary?.content ?? ""
-  const sourceLength = sourceContent.trim().length
+  const sourceLength = manualText.trim().length
   const hasSavedSource =
     sourceType === "note" ? Boolean(selectedNote) : Boolean(selectedSummary)
 
@@ -188,7 +178,7 @@ export function FlashcardGenerator({
             </Select>
             <FieldDescription>
               {notes.length
-                ? "Flashcards will use the note content."
+                ? "Flashcards will load the note content when you generate."
                 : "Create a note first to use this source."}
             </FieldDescription>
           </Field>
@@ -228,7 +218,7 @@ export function FlashcardGenerator({
             </Select>
             <FieldDescription>
               {summaries.length
-                ? "Flashcards will use the generated summary content."
+                ? "Flashcards will load the summary content when you generate."
                 : "Save an AI summary first to use this source."}
             </FieldDescription>
           </Field>
@@ -246,7 +236,7 @@ export function FlashcardGenerator({
               ) : null}
             </div>
             <p className="text-sm leading-6 text-muted-foreground">
-              {getPreview(sourceContent)}
+              Content will be loaded only when you generate flashcards.
             </p>
           </div>
         ) : null}

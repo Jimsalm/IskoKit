@@ -10,6 +10,8 @@ import {
   deleteFlashcard,
   generateFlashcards,
   getDeck,
+  listFlashcardNoteSources,
+  listFlashcardSummarySources,
   listDecksWithStats,
   listFlashcardsByDeck,
   submitFlashcardReview,
@@ -18,6 +20,10 @@ import {
 } from "@/features/flashcards/api"
 
 export const flashcardDecksQueryKey = ["flashcard-decks"] as const
+export const flashcardNoteSourcesQueryKey = ["flashcard-note-sources"] as const
+export const flashcardSummarySourcesQueryKey = [
+  "flashcard-summary-sources",
+] as const
 
 export function flashcardDeckQueryKey(deckId: string) {
   return ["flashcard-decks", deckId] as const
@@ -46,6 +52,30 @@ export function useFlashcardDecks() {
   return useQuery({
     queryKey: flashcardDecksQueryKey,
     queryFn: listDecksWithStats,
+  })
+}
+
+export function useFlashcardNoteSources({
+  enabled = true,
+}: {
+  enabled?: boolean
+} = {}) {
+  return useQuery({
+    queryKey: flashcardNoteSourcesQueryKey,
+    queryFn: listFlashcardNoteSources,
+    enabled,
+  })
+}
+
+export function useFlashcardSummarySources({
+  enabled = true,
+}: {
+  enabled?: boolean
+} = {}) {
+  return useQuery({
+    queryKey: flashcardSummarySourcesQueryKey,
+    queryFn: listFlashcardSummarySources,
+    enabled,
   })
 }
 
