@@ -86,7 +86,6 @@ export type UpdateGwaRecordValues = {
 
 export type GwaRecordSummary = {
   id: string
-  userId: string
   semester: string
   schoolYear: string
   gwa: number
@@ -113,7 +112,6 @@ export type GwaSubject = {
 
 export type GwaRecordRow = {
   id: string
-  user_id: string
   semester: string
   school_year: string
   gwa: number | string

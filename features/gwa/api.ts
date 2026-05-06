@@ -15,7 +15,7 @@ import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const recordSelect =
-  "id,user_id,semester,school_year,gwa,total_units,total_subjects,created_at,updated_at"
+  "id,semester,school_year,gwa,total_units,total_subjects,created_at,updated_at"
 
 const subjectSelect =
   "id,gwa_record_id,subject_name,subject_code,units,grade,is_included,created_at"
@@ -62,7 +62,6 @@ function toSubject(row: GwaSubjectRow): GwaSubject {
 function toRecordSummary(row: GwaRecordRow): GwaRecordSummary {
   return {
     id: row.id,
-    userId: row.user_id,
     semester: row.semester,
     schoolYear: row.school_year,
     gwa: toNumber(row.gwa),
