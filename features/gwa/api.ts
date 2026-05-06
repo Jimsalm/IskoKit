@@ -38,7 +38,7 @@ function gwaErrorOptions(fallbackMessage: string) {
     mappings: [
       {
         code: "SETUP_REQUIRED" as const,
-        matches: ["save_gwa_record"],
+        matches: ["save_gwa_record", "delete_gwa_record"],
         message: gwaErrorMessages.setupMessage,
       },
     ],
@@ -177,7 +177,9 @@ export async function updateGwaRecord({
 
 export async function deleteGwaRecord(id: string): Promise<void> {
   const supabase = createClient()
-  const { error } = await supabase.from("gwa_records").delete().eq("id", id)
+  const { error } = await supabase.rpc("delete_gwa_record", {
+    p_record_id: id,
+  })
 
   if (error) {
     throwAppError(

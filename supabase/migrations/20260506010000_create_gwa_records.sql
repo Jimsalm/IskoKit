@@ -44,12 +44,6 @@ for select
 to authenticated
 using ((select auth.uid()) = user_id);
 
-create policy "Users can delete their own GWA records"
-on public.gwa_records
-for delete
-to authenticated
-using ((select auth.uid()) = user_id);
-
 drop policy if exists "Users can read subjects from their own GWA records" on public.gwa_subjects;
 drop policy if exists "Users can create subjects for their own GWA records" on public.gwa_subjects;
 drop policy if exists "Users can update subjects for their own GWA records" on public.gwa_subjects;
@@ -292,6 +286,34 @@ $$;
 
 revoke all on function public.save_gwa_record(uuid, text, text, jsonb) from public;
 grant execute on function public.save_gwa_record(uuid, text, text, jsonb) to authenticated;
+
+create or replace function public.delete_gwa_record(p_record_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_deleted_id uuid;
+begin
+  if v_user_id is null then
+    raise exception 'AUTH_REQUIRED';
+  end if;
+
+  delete from public.gwa_records
+  where id = p_record_id
+    and user_id = v_user_id
+  returning id into v_deleted_id;
+
+  if v_deleted_id is null then
+    raise exception 'GWA record was not found.';
+  end if;
+end;
+$$;
+
+revoke all on function public.delete_gwa_record(uuid) from public;
+grant execute on function public.delete_gwa_record(uuid) to authenticated;
 
 create index if not exists gwa_records_user_id_created_at_idx
 on public.gwa_records (user_id, created_at desc);
