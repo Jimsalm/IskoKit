@@ -1,13 +1,26 @@
 import { noteFormSchema } from "@/features/notes/schemas"
 import type { Note, NoteFormValues, NoteRow } from "@/features/notes/types"
 import { noteSources } from "@/features/notes/types"
+import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const notesSelect =
   "id,user_id,subject,title,content,tags,color,is_pinned,source,created_at,updated_at"
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Something went wrong."
+const noteErrorMessages = {
+  permissionMessage:
+    "You do not have permission to manage this note. Please sign in again.",
+  setupMessage:
+    "Notes are not set up yet. Please run the notes database migration.",
+  networkMessage:
+    "Could not reach the database. Check your connection and try again.",
+}
+
+function noteErrorOptions(fallbackMessage: string) {
+  return {
+    ...noteErrorMessages,
+    fallbackMessage,
+  }
 }
 
 function toNote(row: NoteRow): Note {
@@ -46,11 +59,16 @@ async function getCurrentUserId() {
   const { data, error } = await supabase.auth.getUser()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(error, {
+      ...noteErrorMessages,
+      fallbackMessage: "Could not verify your session. Please sign in again.",
+    })
   }
 
   if (!data.user) {
-    throw new Error("You must be signed in to manage notes.")
+    throw new AppError("You must be signed in to manage notes.", {
+      code: "AUTH_REQUIRED",
+    })
   }
 
   return data.user.id
@@ -65,7 +83,10 @@ export async function listNotes(): Promise<Note[]> {
     .order("created_at", { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      noteErrorOptions("Could not load notes. Please try again."),
+    )
   }
 
   return ((data ?? []) as NoteRow[]).map(toNote)
@@ -87,7 +108,10 @@ export async function createNote(values: NoteFormValues): Promise<Note> {
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      noteErrorOptions("Could not create note. Please try again."),
+    )
   }
 
   return toNote(data as NoteRow)
@@ -111,7 +135,10 @@ export async function updateNote({
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      noteErrorOptions("Could not update note. Please try again."),
+    )
   }
 
   return toNote(data as NoteRow)
@@ -122,10 +149,16 @@ export async function deleteNote(id: string): Promise<void> {
   const { error } = await supabase.from("notes").delete().eq("id", id)
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      noteErrorOptions("Could not delete note. Please try again."),
+    )
   }
 }
 
 export function noteMutationError(error: unknown) {
-  return getErrorMessage(error)
+  return getUserErrorMessage(
+    error,
+    "Something went wrong with notes. Please try again.",
+  )
 }
