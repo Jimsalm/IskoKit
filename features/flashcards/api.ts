@@ -49,6 +49,7 @@ import {
   reviewRatings,
   reviewResults,
 } from "@/features/flashcards/types"
+import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const deckSelect =
@@ -68,14 +69,32 @@ const summarySourceSelect = "id,title"
 
 const summarySourceContentSelect = "id,title,content"
 
-function getErrorMessage(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { error?: string } | undefined
+const flashcardErrorMessages = {
+  permissionMessage:
+    "You do not have permission to manage flashcards. Please sign in again.",
+  setupMessage:
+    "Flashcards are not set up yet. Please run the flashcards database migration.",
+  networkMessage:
+    "Could not reach the database. Check your connection and try again.",
+}
 
-    return data?.error ?? error.message
+function flashcardErrorOptions(fallbackMessage: string) {
+  return {
+    ...flashcardErrorMessages,
+    fallbackMessage,
   }
+}
 
-  return error instanceof Error ? error.message : "Something went wrong."
+function flashcardRequestErrorOptions(fallbackMessage: string) {
+  return {
+    fallbackMessage,
+    permissionMessage:
+      "You must be signed in to generate flashcards. Please sign in again.",
+    setupMessage: "AI flashcard generation is not configured yet.",
+    networkMessage:
+      "Could not reach the AI flashcard generator. Check your connection and try again.",
+    preferResponseMessage: true,
+  }
 }
 
 function toDeck(row: FlashcardDeckRow): FlashcardDeck {
@@ -223,7 +242,9 @@ async function verifyGeneratedFlashcardSource({
   }
 
   if (!sourceId) {
-    throw new Error("Choose a saved source first.")
+    throw new AppError("Choose a saved source first.", {
+      code: "VALIDATION",
+    })
   }
 
   const supabase = createClient()
@@ -236,11 +257,16 @@ async function verifyGeneratedFlashcardSource({
     .maybeSingle()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not verify the selected source."),
+    )
   }
 
   if (!data) {
-    throw new Error("Choose a saved source that belongs to your account.")
+    throw new AppError("Choose a saved source that belongs to your account.", {
+      code: "FORBIDDEN",
+    })
   }
 
   return sourceId
@@ -251,11 +277,18 @@ async function getCurrentUserId() {
   const { data, error } = await supabase.auth.getUser()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions(
+        "Could not verify your session. Please sign in again.",
+      ),
+    )
   }
 
   if (!data.user) {
-    throw new Error("You must be signed in to manage flashcards.")
+    throw new AppError("You must be signed in to manage flashcards.", {
+      code: "AUTH_REQUIRED",
+    })
   }
 
   return data.user.id
@@ -263,12 +296,21 @@ async function getCurrentUserId() {
 
 export async function generateFlashcards(values: GenerateFlashcardsValues) {
   const payload = generateFlashcardsRequestSchema.parse(values)
-  const { data } = await axios.post<GenerateFlashcardsResult>(
-    "/api/ai/flashcards",
-    payload,
-  )
+  try {
+    const { data } = await axios.post<GenerateFlashcardsResult>(
+      "/api/ai/flashcards",
+      payload,
+    )
 
-  return data
+    return data
+  } catch (error) {
+    throwAppError(
+      error,
+      flashcardRequestErrorOptions(
+        "Could not generate flashcards. Please try again.",
+      ),
+    )
+  }
 }
 
 export async function listFlashcardNoteSources(): Promise<
@@ -281,7 +323,10 @@ export async function listFlashcardNoteSources(): Promise<
     .order("updated_at", { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not load note sources. Please try again."),
+    )
   }
 
   return ((data ?? []) as FlashcardNoteSourceRow[]).map(toNoteSource)
@@ -297,7 +342,12 @@ export async function listFlashcardSummarySources(): Promise<
     .order("updated_at", { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions(
+        "Could not load summary sources. Please try again.",
+      ),
+    )
   }
 
   return ((data ?? []) as FlashcardSummarySourceRow[]).map(toSummarySource)
@@ -314,7 +364,10 @@ export async function getFlashcardNoteSourceContent(
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not load note content. Please try again."),
+    )
   }
 
   return toNoteSourceContent(data as FlashcardNoteSourceContentRow)
@@ -331,7 +384,12 @@ export async function getFlashcardSummarySourceContent(
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions(
+        "Could not load summary content. Please try again.",
+      ),
+    )
   }
 
   return toSummarySourceContent(data as FlashcardSummarySourceContentRow)
@@ -351,11 +409,17 @@ export async function listDecksWithStats(): Promise<FlashcardDeckWithStats[]> {
   ])
 
   if (decksResult.error) {
-    throw new Error(decksResult.error.message)
+    throwAppError(
+      decksResult.error,
+      flashcardErrorOptions("Could not load flashcard decks. Please try again."),
+    )
   }
 
   if (flashcardsResult.error) {
-    throw new Error(flashcardsResult.error.message)
+    throwAppError(
+      flashcardsResult.error,
+      flashcardErrorOptions("Could not load flashcard stats. Please try again."),
+    )
   }
 
   const flashcards = ((flashcardsResult.data ?? []) as FlashcardStatsRow[])
@@ -383,7 +447,10 @@ export async function getDeck(id: string): Promise<FlashcardDeck> {
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not load this deck. Please try again."),
+    )
   }
 
   return toDeck(data as FlashcardDeckRow)
@@ -403,7 +470,10 @@ export async function createDeck(values: DeckFormValues) {
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not create deck. Please try again."),
+    )
   }
 
   return toDeck(data as FlashcardDeckRow)
@@ -426,7 +496,10 @@ export async function updateDeck({
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not update deck. Please try again."),
+    )
   }
 
   return toDeck(data as FlashcardDeckRow)
@@ -437,7 +510,10 @@ export async function deleteDeck(id: string) {
   const { error } = await supabase.from("flashcard_decks").delete().eq("id", id)
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not delete deck. Please try again."),
+    )
   }
 }
 
@@ -450,7 +526,10 @@ export async function listFlashcardsByDeck(deckId: string) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not load flashcards. Please try again."),
+    )
   }
 
   return ((data ?? []) as FlashcardRow[])
@@ -486,7 +565,10 @@ export async function createManualFlashcard({
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not create flashcard. Please try again."),
+    )
   }
 
   return toFlashcard(data as FlashcardRow)
@@ -514,7 +596,10 @@ export async function updateFlashcard({
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not update flashcard. Please try again."),
+    )
   }
 
   return toFlashcard(data as FlashcardRow)
@@ -549,7 +634,12 @@ export async function createGeneratedFlashcards(
     .select(flashcardsSelect)
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions(
+        "Could not save generated flashcards. Please try again.",
+      ),
+    )
   }
 
   return ((data ?? []) as FlashcardRow[]).map(toFlashcard)
@@ -560,7 +650,10 @@ export async function deleteFlashcard(id: string) {
   const { error } = await supabase.from("flashcards").delete().eq("id", id)
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      flashcardErrorOptions("Could not delete flashcard. Please try again."),
+    )
   }
 }
 
@@ -578,7 +671,12 @@ export async function submitFlashcardReview(
     .single()
 
   if (cardError) {
-    throw new Error(cardError.message)
+    throwAppError(
+      cardError,
+      flashcardErrorOptions(
+        "Could not load this flashcard for review. Please try again.",
+      ),
+    )
   }
 
   const flashcard = toFlashcard(cardData as FlashcardRow)
@@ -604,7 +702,12 @@ export async function submitFlashcardReview(
     .single()
 
   if (updateError) {
-    throw new Error(updateError.message)
+    throwAppError(
+      updateError,
+      flashcardErrorOptions(
+        "Could not update review progress. Please try again.",
+      ),
+    )
   }
 
   const { error: reviewError } = await supabase
@@ -619,7 +722,10 @@ export async function submitFlashcardReview(
     } satisfies Omit<FlashcardReviewRow, "id">)
 
   if (reviewError) {
-    throw new Error(reviewError.message)
+    throwAppError(
+      reviewError,
+      flashcardErrorOptions("Could not save review history. Please try again."),
+    )
   }
 
   return toFlashcard(updatedData as FlashcardRow)
@@ -660,5 +766,8 @@ export function isReviewRating(value: string) {
 }
 
 export function flashcardMutationError(error: unknown) {
-  return getErrorMessage(error)
+  return getUserErrorMessage(
+    error,
+    "Something went wrong with flashcards. Please try again.",
+  )
 }
