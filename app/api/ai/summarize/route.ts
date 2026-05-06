@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     })
     const response = await openai.responses.create({
-      model: process.env.OPENAI_SUMMARY_MODEL ?? "gpt-5.5",
+      model: process.env.OPENAI_SUMMARY_MODEL ?? "gpt-5.4-nano",
       instructions: getSummarizerInstructions(payload.summaryType),
       input: payload.content,
     })
