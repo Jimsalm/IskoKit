@@ -1,6 +1,8 @@
-import { ToolPlaceholder } from "@/features/app-shell/components/tool-placeholder"
-import { getAppTool } from "@/features/app-shell/tools"
+import { AssignmentsPageClient } from "@/features/assignments/components/assignments-page-client"
+import { requireAuth } from "@/features/auth/server"
 
-export default function AssignmentPlannerPage() {
-  return <ToolPlaceholder tool={getAppTool("/assignment-planner")} />
+export default async function AssignmentPlannerPage() {
+  await requireAuth()
+
+  return <AssignmentsPageClient />
 }
