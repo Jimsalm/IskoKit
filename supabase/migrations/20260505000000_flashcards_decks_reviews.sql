@@ -15,6 +15,11 @@ create table if not exists public.flashcard_decks (
 
 alter table public.flashcard_decks enable row level security;
 
+drop policy if exists "Users can read their own flashcard decks" on public.flashcard_decks;
+drop policy if exists "Users can create their own flashcard decks" on public.flashcard_decks;
+drop policy if exists "Users can update their own flashcard decks" on public.flashcard_decks;
+drop policy if exists "Users can delete their own flashcard decks" on public.flashcard_decks;
+
 create policy "Users can read their own flashcard decks"
 on public.flashcard_decks
 for select
@@ -86,6 +91,27 @@ with check (
     where flashcard_decks.id = flashcards.deck_id
       and flashcard_decks.user_id = (select auth.uid())
   )
+  and (
+    (source_type in ('manual', 'manual_text') and source_id is null)
+    or (
+      source_type = 'note'
+      and exists (
+        select 1
+        from public.notes
+        where notes.id = flashcards.source_id
+          and notes.user_id = (select auth.uid())
+      )
+    )
+    or (
+      source_type = 'summary'
+      and exists (
+        select 1
+        from public.summaries
+        where summaries.id = flashcards.source_id
+          and summaries.user_id = (select auth.uid())
+      )
+    )
+  )
 );
 
 create policy "Users can update their own flashcards"
@@ -102,6 +128,27 @@ with check (
     where flashcard_decks.id = flashcards.deck_id
       and flashcard_decks.user_id = (select auth.uid())
   )
+  and (
+    (source_type in ('manual', 'manual_text') and source_id is null)
+    or (
+      source_type = 'note'
+      and exists (
+        select 1
+        from public.notes
+        where notes.id = flashcards.source_id
+          and notes.user_id = (select auth.uid())
+      )
+    )
+    or (
+      source_type = 'summary'
+      and exists (
+        select 1
+        from public.summaries
+        where summaries.id = flashcards.source_id
+          and summaries.user_id = (select auth.uid())
+      )
+    )
+  )
 );
 
 create table if not exists public.flashcard_reviews (
@@ -117,6 +164,9 @@ create table if not exists public.flashcard_reviews (
 );
 
 alter table public.flashcard_reviews enable row level security;
+
+drop policy if exists "Users can read their own flashcard reviews" on public.flashcard_reviews;
+drop policy if exists "Users can create their own flashcard reviews" on public.flashcard_reviews;
 
 create policy "Users can read their own flashcard reviews"
 on public.flashcard_reviews

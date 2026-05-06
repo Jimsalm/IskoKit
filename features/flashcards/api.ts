@@ -209,6 +209,43 @@ function toDeckPayload(values: DeckFormValues) {
   }
 }
 
+async function verifyGeneratedFlashcardSource({
+  sourceType,
+  sourceId,
+  userId,
+}: {
+  sourceType: FlashcardGenerationSourceType
+  sourceId: string | null
+  userId: string
+}) {
+  if (sourceType === "manual_text") {
+    return null
+  }
+
+  if (!sourceId) {
+    throw new Error("Choose a saved source first.")
+  }
+
+  const supabase = createClient()
+  const tableName = sourceType === "note" ? "notes" : "summaries"
+  const { data, error } = await supabase
+    .from(tableName)
+    .select("id")
+    .eq("id", sourceId)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data) {
+    throw new Error("Choose a saved source that belongs to your account.")
+  }
+
+  return sourceId
+}
+
 async function getCurrentUserId() {
   const supabase = createClient()
   const { data, error } = await supabase.auth.getUser()
@@ -489,6 +526,11 @@ export async function createGeneratedFlashcards(
   const supabase = createClient()
   const userId = await getCurrentUserId()
   const parsed = createGeneratedFlashcardsSchema.parse(values)
+  const verifiedSourceId = await verifyGeneratedFlashcardSource({
+    sourceType: parsed.sourceType,
+    sourceId: parsed.sourceId ?? null,
+    userId,
+  })
   const rows = parsed.flashcards.map((flashcard) => ({
     user_id: userId,
     deck_id: parsed.deckId,
@@ -498,7 +540,7 @@ export async function createGeneratedFlashcards(
     difficulty: flashcard.difficulty,
     type: flashcard.type,
     source_type: parsed.sourceType,
-    source_id: parsed.sourceId ?? null,
+    source_id: verifiedSourceId,
     is_ai_generated: true,
   }))
   const { data, error } = await supabase
