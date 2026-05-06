@@ -44,19 +44,6 @@ for select
 to authenticated
 using ((select auth.uid()) = user_id);
 
-create policy "Users can create their own GWA records"
-on public.gwa_records
-for insert
-to authenticated
-with check ((select auth.uid()) = user_id);
-
-create policy "Users can update their own GWA records"
-on public.gwa_records
-for update
-to authenticated
-using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
-
 create policy "Users can delete their own GWA records"
 on public.gwa_records
 for delete
@@ -71,53 +58,6 @@ drop policy if exists "Users can delete subjects from their own GWA records" on 
 create policy "Users can read subjects from their own GWA records"
 on public.gwa_subjects
 for select
-to authenticated
-using (
-  exists (
-    select 1
-    from public.gwa_records
-    where public.gwa_records.id = public.gwa_subjects.gwa_record_id
-      and public.gwa_records.user_id = (select auth.uid())
-  )
-);
-
-create policy "Users can create subjects for their own GWA records"
-on public.gwa_subjects
-for insert
-to authenticated
-with check (
-  exists (
-    select 1
-    from public.gwa_records
-    where public.gwa_records.id = public.gwa_subjects.gwa_record_id
-      and public.gwa_records.user_id = (select auth.uid())
-  )
-);
-
-create policy "Users can update subjects for their own GWA records"
-on public.gwa_subjects
-for update
-to authenticated
-using (
-  exists (
-    select 1
-    from public.gwa_records
-    where public.gwa_records.id = public.gwa_subjects.gwa_record_id
-      and public.gwa_records.user_id = (select auth.uid())
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.gwa_records
-    where public.gwa_records.id = public.gwa_subjects.gwa_record_id
-      and public.gwa_records.user_id = (select auth.uid())
-  )
-);
-
-create policy "Users can delete subjects from their own GWA records"
-on public.gwa_subjects
-for delete
 to authenticated
 using (
   exists (
@@ -144,6 +84,214 @@ create trigger gwa_records_set_updated_at
 before update on public.gwa_records
 for each row
 execute function public.set_updated_at();
+
+create or replace function public.save_gwa_record(
+  p_record_id uuid,
+  p_semester text,
+  p_school_year text,
+  p_subjects jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_record_id uuid;
+  v_subject jsonb;
+  v_subject_name text;
+  v_subject_code text;
+  v_units numeric;
+  v_units_text text;
+  v_grade text;
+  v_is_included boolean;
+  v_total_units numeric := 0;
+  v_total_subjects integer := 0;
+  v_total_weighted_grades numeric := 0;
+  v_gwa numeric;
+begin
+  if v_user_id is null then
+    raise exception 'AUTH_REQUIRED';
+  end if;
+
+  if char_length(trim(coalesce(p_semester, ''))) not between 1 and 80 then
+    raise exception 'Semester is required.';
+  end if;
+
+  if char_length(trim(coalesce(p_school_year, ''))) not between 1 and 40 then
+    raise exception 'School year is required.';
+  end if;
+
+  if p_subjects is null
+    or jsonb_typeof(p_subjects) <> 'array'
+    or jsonb_array_length(p_subjects) = 0 then
+    raise exception 'Save at least one subject breakdown.';
+  end if;
+
+  for v_subject in
+    select value
+    from jsonb_array_elements(p_subjects)
+  loop
+    v_subject_name := trim(coalesce(v_subject ->> 'subjectName', ''));
+    v_subject_code := nullif(trim(coalesce(v_subject ->> 'subjectCode', '')), '');
+    v_units_text := trim(coalesce(v_subject ->> 'units', ''));
+    v_grade := trim(coalesce(v_subject ->> 'grade', ''));
+
+    if char_length(v_subject_name) not between 1 and 160 then
+      raise exception 'Subject name is required.';
+    end if;
+
+    if v_subject_code is not null and char_length(v_subject_code) > 40 then
+      raise exception 'Keep the subject code under 40 characters.';
+    end if;
+
+    if v_units_text !~ '^[0-9]+(\.[0-9]+)?$' then
+      raise exception 'Units must be a number.';
+    end if;
+
+    v_units := v_units_text::numeric;
+
+    if v_units <= 0 then
+      raise exception 'Units must be greater than 0.';
+    end if;
+
+    if v_units > 99 then
+      raise exception 'Keep units under 100.';
+    end if;
+
+    if v_grade not in (
+      '1.00',
+      '1.25',
+      '1.50',
+      '1.75',
+      '2.00',
+      '2.25',
+      '2.50',
+      '2.75',
+      '3.00',
+      '4.00',
+      '5.00',
+      'INC',
+      'DRP',
+      'NFE',
+      'P',
+      'F'
+    ) then
+      raise exception 'Choose a valid grade.';
+    end if;
+
+    v_is_included := v_grade in (
+      '1.00',
+      '1.25',
+      '1.50',
+      '1.75',
+      '2.00',
+      '2.25',
+      '2.50',
+      '2.75',
+      '3.00',
+      '4.00',
+      '5.00'
+    );
+
+    if v_is_included then
+      v_total_units := v_total_units + v_units;
+      v_total_subjects := v_total_subjects + 1;
+      v_total_weighted_grades := v_total_weighted_grades + (v_grade::numeric * v_units);
+    end if;
+  end loop;
+
+  if v_total_subjects = 0 or v_total_units <= 0 then
+    raise exception 'At least one subject must have a numeric grade.';
+  end if;
+
+  v_gwa := round(v_total_weighted_grades / v_total_units, 2);
+
+  if p_record_id is null then
+    insert into public.gwa_records (
+      user_id,
+      semester,
+      school_year,
+      gwa,
+      total_units,
+      total_subjects
+    )
+    values (
+      v_user_id,
+      trim(p_semester),
+      trim(p_school_year),
+      v_gwa,
+      round(v_total_units, 2),
+      v_total_subjects
+    )
+    returning id into v_record_id;
+  else
+    update public.gwa_records
+    set
+      semester = trim(p_semester),
+      school_year = trim(p_school_year),
+      gwa = v_gwa,
+      total_units = round(v_total_units, 2),
+      total_subjects = v_total_subjects
+    where id = p_record_id
+      and user_id = v_user_id
+    returning id into v_record_id;
+
+    if v_record_id is null then
+      raise exception 'GWA record was not found.';
+    end if;
+
+    delete from public.gwa_subjects
+    where gwa_record_id = v_record_id;
+  end if;
+
+  for v_subject in
+    select value
+    from jsonb_array_elements(p_subjects)
+  loop
+    v_subject_name := trim(coalesce(v_subject ->> 'subjectName', ''));
+    v_subject_code := nullif(trim(coalesce(v_subject ->> 'subjectCode', '')), '');
+    v_units := trim(coalesce(v_subject ->> 'units', ''))::numeric;
+    v_grade := trim(coalesce(v_subject ->> 'grade', ''));
+    v_is_included := v_grade in (
+      '1.00',
+      '1.25',
+      '1.50',
+      '1.75',
+      '2.00',
+      '2.25',
+      '2.50',
+      '2.75',
+      '3.00',
+      '4.00',
+      '5.00'
+    );
+
+    insert into public.gwa_subjects (
+      gwa_record_id,
+      subject_name,
+      subject_code,
+      units,
+      grade,
+      is_included
+    )
+    values (
+      v_record_id,
+      v_subject_name,
+      v_subject_code,
+      v_units,
+      v_grade,
+      v_is_included
+    );
+  end loop;
+
+  return v_record_id;
+end;
+$$;
+
+revoke all on function public.save_gwa_record(uuid, text, text, jsonb) from public;
+grant execute on function public.save_gwa_record(uuid, text, text, jsonb) to authenticated;
 
 create index if not exists gwa_records_user_id_created_at_idx
 on public.gwa_records (user_id, created_at desc);

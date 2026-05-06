@@ -62,22 +62,9 @@ export type GwaCalculationResult = {
   remarks: string
 }
 
-export type SaveGwaSubjectValues = {
-  subjectName: string
-  subjectCode?: string
-  units: number
-  grade: GwaGrade
-  isIncluded: boolean
-}
+export type SaveGwaSubjectValues = GwaCalculationSubject
 
-export type SaveGwaRecordValues = {
-  semester: string
-  schoolYear: string
-  gwa: number
-  totalUnits: number
-  totalSubjects: number
-  subjects: SaveGwaSubjectValues[]
-}
+export type SaveGwaRecordValues = GwaCalculationValues
 
 export type UpdateGwaRecordValues = {
   id: string

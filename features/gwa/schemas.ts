@@ -91,9 +91,7 @@ export const gwaCalculationSchema = z.object({
   subjects: z.array(gwaSubjectSchema).min(1, "Add at least one subject."),
 })
 
-export const saveGwaSubjectSchema = gwaSubjectSchema.extend({
-  isIncluded: z.boolean(),
-})
+export const saveGwaSubjectSchema = gwaSubjectSchema
 
 export const saveGwaRecordSchema = z.object({
   semester: z
@@ -106,9 +104,6 @@ export const saveGwaRecordSchema = z.object({
     .trim()
     .min(1, "School year is required.")
     .max(40, "Keep the school year under 40 characters."),
-  gwa: z.number().min(1).max(5),
-  totalUnits: z.number().positive(),
-  totalSubjects: z.number().int().positive(),
   subjects: z
     .array(saveGwaSubjectSchema)
     .min(1, "Save at least one subject breakdown."),

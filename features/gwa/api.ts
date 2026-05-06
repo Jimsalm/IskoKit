@@ -35,6 +35,13 @@ function gwaErrorOptions(fallbackMessage: string) {
   return {
     ...gwaErrorMessages,
     fallbackMessage,
+    mappings: [
+      {
+        code: "SETUP_REQUIRED" as const,
+        matches: ["save_gwa_record"],
+        message: gwaErrorMessages.setupMessage,
+      },
+    ],
   }
 }
 
@@ -83,26 +90,6 @@ function toRecord(row: GwaRecordWithSubjectsRow): GwaRecord {
   }
 }
 
-async function getCurrentUserId() {
-  const supabase = createClient()
-  const { data, error } = await supabase.auth.getUser()
-
-  if (error) {
-    throwAppError(
-      error,
-      gwaErrorOptions("Could not verify your session. Please sign in again."),
-    )
-  }
-
-  if (!data.user) {
-    throw new AppError("You must be signed in to manage GWA records.", {
-      code: "AUTH_REQUIRED",
-    })
-  }
-
-  return data.user.id
-}
-
 export async function listGwaRecords(): Promise<GwaRecordSummary[]> {
   const supabase = createClient()
   const { data, error } = await supabase
@@ -138,57 +125,42 @@ export async function getGwaRecord(id: string): Promise<GwaRecord> {
   return toRecord(data as GwaRecordWithSubjectsRow)
 }
 
+async function saveGwaRecord({
+  id,
+  values,
+  fallbackMessage,
+}: {
+  id: string | null
+  values: SaveGwaRecordValues
+  fallbackMessage: string
+}) {
+  const supabase = createClient()
+  const parsed = saveGwaRecordSchema.parse(values)
+  const { data: recordId, error } = await supabase.rpc("save_gwa_record", {
+    p_record_id: id,
+    p_school_year: parsed.schoolYear,
+    p_semester: parsed.semester,
+    p_subjects: parsed.subjects,
+  })
+
+  if (error) {
+    throwAppError(error, gwaErrorOptions(fallbackMessage))
+  }
+
+  if (typeof recordId !== "string") {
+    throw new AppError(fallbackMessage, { code: "UNKNOWN" })
+  }
+
+  return getGwaRecord(recordId)
+}
+
 export async function createGwaRecord(
   values: SaveGwaRecordValues,
 ): Promise<GwaRecord> {
-  const supabase = createClient()
-  const userId = await getCurrentUserId()
-  const parsed = saveGwaRecordSchema.parse(values)
-  const { data: recordData, error: recordError } = await supabase
-    .from("gwa_records")
-    .insert({
-      user_id: userId,
-      semester: parsed.semester,
-      school_year: parsed.schoolYear,
-      gwa: parsed.gwa,
-      total_units: parsed.totalUnits,
-      total_subjects: parsed.totalSubjects,
-    })
-    .select(recordSelect)
-    .single()
-
-  if (recordError) {
-    throwAppError(
-      recordError,
-      gwaErrorOptions("Could not save GWA record. Please try again."),
-    )
-  }
-
-  const record = recordData as GwaRecordRow
-  const subjectRows = parsed.subjects.map((subject) => ({
-    gwa_record_id: record.id,
-    subject_name: subject.subjectName,
-    subject_code: subject.subjectCode ?? null,
-    units: subject.units,
-    grade: subject.grade,
-    is_included: subject.isIncluded,
-  }))
-  const { data: subjectsData, error: subjectsError } = await supabase
-    .from("gwa_subjects")
-    .insert(subjectRows)
-    .select(subjectSelect)
-
-  if (subjectsError) {
-    await supabase.from("gwa_records").delete().eq("id", record.id)
-    throwAppError(
-      subjectsError,
-      gwaErrorOptions("Could not save subject breakdown. Please try again."),
-    )
-  }
-
-  return toRecord({
-    ...record,
-    gwa_subjects: (subjectsData ?? []) as GwaSubjectRow[],
+  return saveGwaRecord({
+    id: null,
+    values,
+    fallbackMessage: "Could not save GWA record. Please try again.",
   })
 }
 
@@ -196,63 +168,10 @@ export async function updateGwaRecord({
   id,
   values,
 }: UpdateGwaRecordValues): Promise<GwaRecord> {
-  const supabase = createClient()
-  const parsed = saveGwaRecordSchema.parse(values)
-  const { data: recordData, error: recordError } = await supabase
-    .from("gwa_records")
-    .update({
-      semester: parsed.semester,
-      school_year: parsed.schoolYear,
-      gwa: parsed.gwa,
-      total_units: parsed.totalUnits,
-      total_subjects: parsed.totalSubjects,
-    })
-    .eq("id", id)
-    .select(recordSelect)
-    .single()
-
-  if (recordError) {
-    throwAppError(
-      recordError,
-      gwaErrorOptions("Could not update GWA record. Please try again."),
-    )
-  }
-
-  const { error: deleteError } = await supabase
-    .from("gwa_subjects")
-    .delete()
-    .eq("gwa_record_id", id)
-
-  if (deleteError) {
-    throwAppError(
-      deleteError,
-      gwaErrorOptions("Could not update subject breakdown. Please try again."),
-    )
-  }
-
-  const subjectRows = parsed.subjects.map((subject) => ({
-    gwa_record_id: id,
-    subject_name: subject.subjectName,
-    subject_code: subject.subjectCode ?? null,
-    units: subject.units,
-    grade: subject.grade,
-    is_included: subject.isIncluded,
-  }))
-  const { data: subjectsData, error: subjectsError } = await supabase
-    .from("gwa_subjects")
-    .insert(subjectRows)
-    .select(subjectSelect)
-
-  if (subjectsError) {
-    throwAppError(
-      subjectsError,
-      gwaErrorOptions("Could not save updated subject breakdown. Please try again."),
-    )
-  }
-
-  return toRecord({
-    ...(recordData as GwaRecordRow),
-    gwa_subjects: (subjectsData ?? []) as GwaSubjectRow[],
+  return saveGwaRecord({
+    id,
+    values,
+    fallbackMessage: "Could not update GWA record. Please try again.",
   })
 }
 

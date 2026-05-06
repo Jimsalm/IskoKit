@@ -156,15 +156,11 @@ function getSavePayload(result: GwaCalculationResult): SaveGwaRecordValues {
   return {
     semester: result.semester,
     schoolYear: result.schoolYear,
-    gwa: result.gwa,
-    totalUnits: result.totalUnits,
-    totalSubjects: result.totalSubjects,
     subjects: result.subjects.map((subject) => ({
       subjectName: subject.subjectName,
       subjectCode: subject.subjectCode,
       units: subject.units,
       grade: subject.grade,
-      isIncluded: subject.isIncluded,
     })),
   }
 }
