@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { XIcon } from "lucide-react"
 
 function Dialog({
@@ -122,6 +123,22 @@ function DialogFooter({
   )
 }
 
+function DialogBody({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof ScrollArea>) {
+  return (
+    <ScrollArea
+      data-slot="dialog-body"
+      className={cn("-mx-1 min-h-0 pr-3", className)}
+      {...props}
+    >
+      <div className="flex flex-col gap-4 px-1">{children}</div>
+    </ScrollArea>
+  )
+}
+
 function DialogTitle({
   className,
   ...props
@@ -156,6 +173,7 @@ function DialogDescription({
 
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
