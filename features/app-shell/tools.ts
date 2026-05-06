@@ -50,9 +50,9 @@ export const appToolGroups = [
         icon: CalendarCheckIcon,
       },
       {
-        href: "/gpa-calculator",
-        label: "GPA Calculator",
-        description: "Calculate grades, GPA, and course targets.",
+        href: "/gwa-calculator",
+        label: "GWA Calculator",
+        description: "Calculate and save semester weighted averages.",
         icon: CalculatorIcon,
       },
       {
