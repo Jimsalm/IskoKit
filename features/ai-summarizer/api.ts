@@ -16,19 +16,38 @@ import type {
   SummaryRow,
 } from "@/features/ai-summarizer/types"
 import { summaryInputTypes, summaryTypes } from "@/features/ai-summarizer/types"
+import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const summariesSelect =
   "id,user_id,file_id,title,input_type,summary_type,content,source_text_preview,created_at,updated_at"
 
-function getErrorMessage(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { error?: string } | undefined
+const summaryErrorMessages = {
+  permissionMessage:
+    "You do not have permission to manage summaries. Please sign in again.",
+  setupMessage:
+    "Summaries are not set up yet. Please run the summaries database migration.",
+  networkMessage:
+    "Could not reach the database. Check your connection and try again.",
+}
 
-    return data?.error ?? error.message
+function summaryErrorOptions(fallbackMessage: string) {
+  return {
+    ...summaryErrorMessages,
+    fallbackMessage,
   }
+}
 
-  return error instanceof Error ? error.message : "Something went wrong."
+function summarizerRequestErrorOptions(fallbackMessage: string) {
+  return {
+    fallbackMessage,
+    permissionMessage:
+      "You must be signed in to use the AI Summarizer. Please sign in again.",
+    setupMessage: "AI Summarizer is not configured yet.",
+    networkMessage:
+      "Could not reach the AI Summarizer. Check your connection and try again.",
+    preferResponseMessage: true,
+  }
 }
 
 function toSummary(row: SummaryRow): Summary {
@@ -71,11 +90,16 @@ async function getCurrentUserId() {
   const { data, error } = await supabase.auth.getUser()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      summaryErrorOptions("Could not verify your session. Please sign in again."),
+    )
   }
 
   if (!data.user) {
-    throw new Error("You must be signed in to manage summaries.")
+    throw new AppError("You must be signed in to manage summaries.", {
+      code: "AUTH_REQUIRED",
+    })
   }
 
   return data.user.id
@@ -85,21 +109,39 @@ export async function extractTextFromFile(file: File) {
   const formData = new FormData()
   formData.set("file", file)
 
-  const { data } = await axios.post<ExtractedTextResult>(
-    "/api/ai/extract-text",
-    formData,
-  )
+  try {
+    const { data } = await axios.post<ExtractedTextResult>(
+      "/api/ai/extract-text",
+      formData,
+    )
 
-  return data
+    return data
+  } catch (error) {
+    throwAppError(
+      error,
+      summarizerRequestErrorOptions(
+        "Could not prepare material. Please try again.",
+      ),
+    )
+  }
 }
 
 export async function generateSummary(values: GenerateSummaryValues) {
-  const { data } = await axios.post<GenerateSummaryResult>(
-    "/api/ai/summarize",
-    values,
-  )
+  try {
+    const { data } = await axios.post<GenerateSummaryResult>(
+      "/api/ai/summarize",
+      values,
+    )
 
-  return data
+    return data
+  } catch (error) {
+    throwAppError(
+      error,
+      summarizerRequestErrorOptions(
+        "Could not generate summary. Please try again.",
+      ),
+    )
+  }
 }
 
 export async function listSummaries() {
@@ -110,7 +152,10 @@ export async function listSummaries() {
     .order("created_at", { ascending: false })
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      summaryErrorOptions("Could not load summaries. Please try again."),
+    )
   }
 
   return ((data ?? []) as SummaryRow[]).map(toSummary)
@@ -131,7 +176,10 @@ export async function createSummary(values: CreateSummaryValues) {
     .single()
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      summaryErrorOptions("Could not save summary. Please try again."),
+    )
   }
 
   return toSummary(data as SummaryRow)
@@ -142,7 +190,10 @@ export async function deleteSummary(id: string) {
   const { error } = await supabase.from("summaries").delete().eq("id", id)
 
   if (error) {
-    throw new Error(error.message)
+    throwAppError(
+      error,
+      summaryErrorOptions("Could not delete summary. Please try again."),
+    )
   }
 }
 
@@ -170,5 +221,8 @@ export function getInputTypeLabel(value: Summary["inputType"]) {
 }
 
 export function summaryMutationError(error: unknown) {
-  return getErrorMessage(error)
+  return getUserErrorMessage(
+    error,
+    "Something went wrong with summaries. Please try again.",
+  )
 }
