@@ -8,7 +8,6 @@ export type PomodoroStatus = (typeof pomodoroStatuses)[number]
 
 export type PomodoroSessionRow = {
   id: string
-  user_id: string
   subject: string | null
   task_label: string | null
   mode: string
@@ -22,7 +21,6 @@ export type PomodoroSessionRow = {
 
 export type PomodoroSession = {
   id: string
-  userId: string
   subject: string | null
   taskLabel: string | null
   mode: PomodoroMode

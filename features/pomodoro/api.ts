@@ -13,7 +13,7 @@ import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const pomodoroSessionSelect =
-  "id,user_id,subject,task_label,mode,duration_minutes,actual_minutes,status,started_at,completed_at,created_at"
+  "id,subject,task_label,mode,duration_minutes,actual_minutes,status,started_at,completed_at,created_at"
 
 const pomodoroStatsSelect = "actual_minutes,completed_at"
 
@@ -48,7 +48,6 @@ function toPomodoroStatus(value: string): PomodoroStatus {
 function toSession(row: PomodoroSessionRow): PomodoroSession {
   return {
     id: row.id,
-    userId: row.user_id,
     subject: row.subject,
     taskLabel: row.task_label,
     mode: toPomodoroMode(row.mode),
