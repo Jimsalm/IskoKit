@@ -1,6 +1,8 @@
-import { ToolPlaceholder } from "@/features/app-shell/components/tool-placeholder"
-import { getAppTool } from "@/features/app-shell/tools"
+import { PomodoroPageClient } from "@/features/pomodoro/components/pomodoro-page-client"
+import { requireAuth } from "@/features/auth/server"
 
-export default function PomodoroPage() {
-  return <ToolPlaceholder tool={getAppTool("/pomodoro")} />
+export default async function PomodoroPage() {
+  await requireAuth()
+
+  return <PomodoroPageClient />
 }
