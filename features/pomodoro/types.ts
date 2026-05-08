@@ -32,6 +32,24 @@ export type PomodoroSession = {
   createdAt: string
 }
 
+export type PomodoroActiveSessionRow = {
+  id: string
+  subject: string | null
+  task_label: string | null
+  mode: string
+  duration_minutes: number
+  started_at: string
+}
+
+export type PomodoroActiveSession = {
+  id: string
+  subject: string | null
+  taskLabel: string | null
+  mode: PomodoroMode
+  durationMinutes: number
+  startedAt: string
+}
+
 export type PomodoroStatsRow = Pick<
   PomodoroSession,
   "actualMinutes" | "completedAt"
@@ -57,8 +75,14 @@ export type CreatePomodoroSessionValues = {
   completedAt: string
 }
 
+export type StartPomodoroSessionValues = {
+  subject?: string
+  taskLabel?: string
+}
+
 export type PomodoroTimerStatus = "idle" | "running" | "paused" | "completed"
 
 export type PomodoroTimerCompletion = CreatePomodoroSessionValues & {
   mode: PomodoroMode
+  sessionId?: string | null
 }

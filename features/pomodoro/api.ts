@@ -1,15 +1,20 @@
-import { createPomodoroSessionSchema } from "@/features/pomodoro/schemas"
+import {
+  pomodoroSessionIdSchema,
+  startPomodoroSessionSchema,
+} from "@/features/pomodoro/schemas"
 import type {
-  CreatePomodoroSessionValues,
+  PomodoroActiveSession,
+  PomodoroActiveSessionRow,
   PomodoroMode,
   PomodoroSession,
   PomodoroSessionRow,
   PomodoroStatsRange,
   PomodoroStatsRow,
   PomodoroStatus,
+  StartPomodoroSessionValues,
 } from "@/features/pomodoro/types"
 import { pomodoroModes, pomodoroStatuses } from "@/features/pomodoro/types"
-import { AppError, getUserErrorMessage, throwAppError } from "@/lib/errors"
+import { getUserErrorMessage, throwAppError } from "@/lib/errors"
 import { createClient } from "@/lib/supabase/client"
 
 const pomodoroSessionSelect =
@@ -60,6 +65,17 @@ function toSession(row: PomodoroSessionRow): PomodoroSession {
   }
 }
 
+function toActiveSession(row: PomodoroActiveSessionRow): PomodoroActiveSession {
+  return {
+    id: row.id,
+    subject: row.subject,
+    taskLabel: row.task_label,
+    mode: toPomodoroMode(row.mode),
+    durationMinutes: row.duration_minutes,
+    startedAt: row.started_at,
+  }
+}
+
 function toStatsRow(row: {
   actual_minutes: number
   completed_at: string | null
@@ -70,39 +86,13 @@ function toStatsRow(row: {
   }
 }
 
-function toCompletedFocusPayload(values: CreatePomodoroSessionValues) {
-  const parsed = createPomodoroSessionSchema.parse(values)
+function toStartPomodoroSessionParams(values: StartPomodoroSessionValues) {
+  const parsed = startPomodoroSessionSchema.parse(values)
 
   return {
-    subject: parsed.subject ?? null,
-    task_label: parsed.taskLabel ?? null,
-    mode: "focus",
-    duration_minutes: parsed.durationMinutes,
-    actual_minutes: parsed.actualMinutes,
-    status: "completed",
-    started_at: parsed.startedAt,
-    completed_at: parsed.completedAt,
+    p_subject: parsed.subject ?? null,
+    p_task_label: parsed.taskLabel ?? null,
   }
-}
-
-async function getCurrentUserId() {
-  const supabase = createClient()
-  const { data, error } = await supabase.auth.getUser()
-
-  if (error) {
-    throwAppError(
-      error,
-      pomodoroErrorOptions("Could not verify your session. Please sign in again."),
-    )
-  }
-
-  if (!data.user) {
-    throw new AppError("You must be signed in to manage Pomodoro sessions.", {
-      code: "AUTH_REQUIRED",
-    })
-  }
-
-  return data.user.id
 }
 
 export async function listRecentPomodoroSessions() {
@@ -155,19 +145,32 @@ export async function listPomodoroStatsRows({
   ).map(toStatsRow)
 }
 
-export async function createCompletedFocusSession(
-  values: CreatePomodoroSessionValues,
+export async function startPomodoroFocusSession(
+  values: StartPomodoroSessionValues,
 ) {
   const supabase = createClient()
-  const userId = await getCurrentUserId()
-  const payload = toCompletedFocusPayload(values)
+  const params = toStartPomodoroSessionParams(values)
   const { data, error } = await supabase
-    .from("pomodoro_sessions")
-    .insert({
-      ...payload,
-      user_id: userId,
+    .rpc("start_pomodoro_session", params)
+    .single()
+
+  if (error) {
+    throwAppError(
+      error,
+      pomodoroErrorOptions("Could not start focus session. Please try again."),
+    )
+  }
+
+  return toActiveSession(data as PomodoroActiveSessionRow)
+}
+
+export async function completePomodoroFocusSession(sessionId: string) {
+  const supabase = createClient()
+  const parsedSessionId = pomodoroSessionIdSchema.parse(sessionId)
+  const { data, error } = await supabase
+    .rpc("complete_pomodoro_session", {
+      p_timer_id: parsedSessionId,
     })
-    .select(pomodoroSessionSelect)
     .single()
 
   if (error) {
@@ -180,6 +183,21 @@ export async function createCompletedFocusSession(
   }
 
   return toSession(data as PomodoroSessionRow)
+}
+
+export async function cancelPomodoroFocusSession(sessionId: string) {
+  const supabase = createClient()
+  const parsedSessionId = pomodoroSessionIdSchema.parse(sessionId)
+  const { error } = await supabase.rpc("cancel_pomodoro_session", {
+    p_timer_id: parsedSessionId,
+  })
+
+  if (error) {
+    throwAppError(
+      error,
+      pomodoroErrorOptions("Could not cancel focus session. Please try again."),
+    )
+  }
 }
 
 export function pomodoroMutationError(error: unknown) {

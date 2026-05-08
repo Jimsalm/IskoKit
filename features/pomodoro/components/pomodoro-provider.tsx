@@ -14,8 +14,10 @@ import { toast } from "sonner"
 
 import { pomodoroMutationError } from "@/features/pomodoro/api"
 import {
-  useCreateCompletedFocusSession,
+  useCancelPomodoroFocusSession,
+  useCompletePomodoroFocusSession,
   usePomodoroStatsRows,
+  useStartPomodoroFocusSession,
 } from "@/features/pomodoro/hooks"
 import {
   formatPomodoroMode,
@@ -26,7 +28,6 @@ import {
   getWeekRange,
 } from "@/features/pomodoro/lib/timer"
 import type {
-  CreatePomodoroSessionValues,
   PomodoroMode,
   PomodoroSummary,
   PomodoroTimerCompletion,
@@ -38,7 +39,7 @@ const STORAGE_KEY = "iskokit:pomodoro-timer:v1"
 const STORAGE_VERSION = 1
 
 type PendingSessionSave = {
-  payload: CreatePomodoroSessionValues
+  sessionId: string
   completedFocusSessionsToday: number
 }
 
@@ -51,6 +52,7 @@ type PomodoroTimerState = {
   startedAt: string | null
   deadlineMs: number | null
   pausedTimeRemaining: number | null
+  activeSessionId: string | null
 }
 
 type StoredPomodoroSnapshot = {
@@ -97,6 +99,7 @@ const defaultTimerState: PomodoroTimerState = {
   startedAt: null,
   deadlineMs: null,
   pausedTimeRemaining: null,
+  activeSessionId: null,
 }
 
 const PomodoroTimerContext =
@@ -166,6 +169,8 @@ function normalizeStoredTimer(value: unknown): PomodoroTimerState | null {
       Number.isFinite(timer.pausedTimeRemaining)
         ? timer.pausedTimeRemaining
         : null,
+    activeSessionId:
+      typeof timer.activeSessionId === "string" ? timer.activeSessionId : null,
   }
 }
 
@@ -176,7 +181,7 @@ function normalizePendingSessionSave(value: unknown): PendingSessionSave | null 
 
   const pending = value as Partial<PendingSessionSave>
 
-  if (!pending.payload || typeof pending.payload !== "object") {
+  if (typeof pending.sessionId !== "string") {
     return null
   }
 
@@ -232,6 +237,7 @@ function shouldStoreSnapshot({
     timer.subject.length > 0 ||
     timer.taskLabel.length > 0 ||
     timer.suggestedMode !== "focus" ||
+    Boolean(timer.activeSessionId) ||
     Boolean(pendingSessionSave)
   )
 }
@@ -251,7 +257,9 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   const completionHandledRef = useRef(false)
   const weekRange = useMemo(() => (now ? getWeekRange(now) : null), [now])
   const statsQuery = usePomodoroStatsRows(weekRange)
-  const createSessionMutation = useCreateCompletedFocusSession()
+  const startSessionMutation = useStartPomodoroFocusSession()
+  const completeSessionMutation = useCompletePomodoroFocusSession()
+  const cancelSessionMutation = useCancelPomodoroFocusSession()
   const summary = useMemo(() => {
     if (!now) {
       return emptySummary
@@ -268,7 +276,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     : null
   const isActive = isActiveStatus(timer.status)
   const shouldWarnBeforeUnload =
-    isActive || Boolean(pendingSessionSave) || createSessionMutation.isPending
+    isActive || Boolean(pendingSessionSave) || completeSessionMutation.isPending
 
   useEffect(() => {
     timerRef.current = timer
@@ -298,20 +306,24 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       let nextTimeRemaining = durationSeconds
 
       if (nextTimer.status === "running" && nextTimer.deadlineMs) {
-        nextTimeRemaining = Math.max(
+        const storedTimeRemaining = Math.max(
           0,
           Math.ceil((nextTimer.deadlineMs - Date.now()) / 1000),
         )
+        nextTimeRemaining = Math.min(storedTimeRemaining, durationSeconds)
+        nextTimer.deadlineMs = Date.now() + nextTimeRemaining * 1000
       } else if (nextTimer.status === "paused") {
-        nextTimeRemaining =
-          nextTimer.pausedTimeRemaining ?? getPomodoroModeDurationSeconds(
-            nextTimer.mode,
-          )
+        nextTimeRemaining = Math.min(
+          nextTimer.pausedTimeRemaining ?? durationSeconds,
+          durationSeconds,
+        )
+        nextTimer.pausedTimeRemaining = nextTimeRemaining
       } else if (nextTimer.status === "completed") {
         nextTimer.status = "idle"
         nextTimer.startedAt = null
         nextTimer.deadlineMs = null
         nextTimer.pausedTimeRemaining = null
+        nextTimer.activeSessionId = null
       }
 
       setTimer(nextTimer)
@@ -348,7 +360,17 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
   }, [hasRestoredSnapshot, pendingSessionSave, timer])
 
   const reset = useCallback(() => {
-    const currentMode = timerRef.current.mode
+    const currentTimer = timerRef.current
+
+    if (
+      isActiveStatus(currentTimer.status) &&
+      currentTimer.mode === "focus" &&
+      currentTimer.activeSessionId
+    ) {
+      void cancelSessionMutation
+        .mutateAsync(currentTimer.activeSessionId)
+        .catch(() => undefined)
+    }
 
     completionHandledRef.current = false
     setTimer((currentTimer) => ({
@@ -357,17 +379,18 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       startedAt: null,
       deadlineMs: null,
       pausedTimeRemaining: null,
+      activeSessionId: null,
     }))
-    setTimeRemaining(getPomodoroModeDurationSeconds(currentMode))
-  }, [])
+    setTimeRemaining(getPomodoroModeDurationSeconds(currentTimer.mode))
+  }, [cancelSessionMutation])
 
-  const saveCompletedFocusSession = useCallback(
+  const completeStartedFocusSession = useCallback(
     async ({
-      payload,
+      sessionId,
       completedFocusSessionsToday,
     }: PendingSessionSave) => {
       try {
-        await createSessionMutation.mutateAsync(payload)
+        await completeSessionMutation.mutateAsync(sessionId)
         setPendingSessionSave(null)
         setTimer((currentTimer) => ({
           ...currentTimer,
@@ -375,17 +398,18 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
             completedMode: "focus",
             completedFocusSessionsToday,
           }),
+          activeSessionId: null,
         }))
         toast.success("Focus session saved.")
       } catch (error) {
         setPendingSessionSave({
-          payload,
+          sessionId,
           completedFocusSessionsToday,
         })
         toast.error(pomodoroMutationError(error))
       }
     },
-    [createSessionMutation],
+    [completeSessionMutation],
   )
 
   const handleTimerComplete = useCallback(
@@ -401,19 +425,17 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
 
       const completedFocusSessionsToday = summaryRef.current.sessionsToday + 1
 
-      await saveCompletedFocusSession({
-        payload: {
-          subject: completion.subject,
-          taskLabel: completion.taskLabel,
-          durationMinutes: completion.durationMinutes,
-          actualMinutes: completion.actualMinutes,
-          startedAt: completion.startedAt,
-          completedAt: completion.completedAt,
-        },
+      if (!completion.sessionId) {
+        toast.error("Could not verify this focus session. Please start again.")
+        return
+      }
+
+      await completeStartedFocusSession({
+        sessionId: completion.sessionId,
         completedFocusSessionsToday,
       })
     },
-    [saveCompletedFocusSession],
+    [completeStartedFocusSession],
   )
 
   const completeTimer = useCallback(() => {
@@ -433,6 +455,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     ).toISOString()
     const completion: PomodoroTimerCompletion = {
       mode: currentTimer.mode,
+      sessionId: currentTimer.activeSessionId,
       subject: currentTimer.subject,
       taskLabel: currentTimer.taskLabel,
       durationMinutes,
@@ -509,6 +532,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       startedAt: null,
       deadlineMs: null,
       pausedTimeRemaining: null,
+      activeSessionId: null,
     }))
     setTimeRemaining(getPomodoroModeDurationSeconds(mode))
   }, [])
@@ -548,14 +572,45 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
     }
 
     completionHandledRef.current = false
+
+    if (currentTimer.mode === "focus") {
+      void startSessionMutation
+        .mutateAsync({
+          subject: currentTimer.subject,
+          taskLabel: currentTimer.taskLabel,
+        })
+        .then((session) => {
+          const durationSeconds = getPomodoroModeDurationSeconds(session.mode)
+          const deadlineMs = Date.now() + durationSeconds * 1000
+
+          setTimer((existingTimer) => ({
+            ...existingTimer,
+            mode: session.mode,
+            subject: session.subject ?? "",
+            taskLabel: session.taskLabel ?? "",
+            status: "running",
+            startedAt: session.startedAt,
+            deadlineMs,
+            pausedTimeRemaining: null,
+            activeSessionId: session.id,
+          }))
+          setTimeRemaining(durationSeconds)
+        })
+        .catch((error) => {
+          toast.error(pomodoroMutationError(error))
+        })
+      return
+    }
+
     setTimer((existingTimer) => ({
       ...existingTimer,
       status: "running",
       startedAt: existingTimer.startedAt ?? new Date().toISOString(),
       deadlineMs: Date.now() + remaining * 1000,
       pausedTimeRemaining: null,
+      activeSessionId: null,
     }))
-  }, [])
+  }, [startSessionMutation])
 
   const pause = useCallback(() => {
     const currentTimer = timerRef.current
@@ -617,8 +672,8 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    void saveCompletedFocusSession(currentPendingSessionSave)
-  }, [pendingSessionSave, saveCompletedFocusSession])
+    void completeStartedFocusSession(currentPendingSessionSave)
+  }, [pendingSessionSave, completeStartedFocusSession])
 
   const value = useMemo<PomodoroTimerContextValue>(
     () => ({
@@ -631,7 +686,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       summary,
       isSummaryLoading,
       summaryErrorMessage,
-      isSaving: createSessionMutation.isPending,
+      isSaving: startSessionMutation.isPending || completeSessionMutation.isPending,
       pendingSessionSave,
       setMode,
       setSubject,
@@ -644,7 +699,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       retryPendingSessionSave,
     }),
     [
-      createSessionMutation.isPending,
+      completeSessionMutation.isPending,
       isSummaryLoading,
       pause,
       pendingSessionSave,
@@ -656,6 +711,7 @@ export function PomodoroProvider({ children }: { children: ReactNode }) {
       setSubject,
       setTaskLabel,
       start,
+      startSessionMutation.isPending,
       summary,
       summaryErrorMessage,
       timeRemaining,

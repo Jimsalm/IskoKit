@@ -3,9 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
-  createCompletedFocusSession,
+  cancelPomodoroFocusSession,
+  completePomodoroFocusSession,
   listPomodoroStatsRows,
   listRecentPomodoroSessions,
+  startPomodoroFocusSession,
 } from "@/features/pomodoro/api"
 import type { PomodoroStatsRange } from "@/features/pomodoro/types"
 
@@ -39,11 +41,17 @@ export function usePomodoroStatsRows(range: PomodoroStatsRange | null) {
   })
 }
 
-export function useCreateCompletedFocusSession() {
+export function useStartPomodoroFocusSession() {
+  return useMutation({
+    mutationFn: startPomodoroFocusSession,
+  })
+}
+
+export function useCompletePomodoroFocusSession() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: createCompletedFocusSession,
+    mutationFn: completePomodoroFocusSession,
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: pomodoroSessionsQueryKey,
@@ -52,5 +60,11 @@ export function useCreateCompletedFocusSession() {
         queryKey: ["pomodoro-stats"],
       })
     },
+  })
+}
+
+export function useCancelPomodoroFocusSession() {
+  return useMutation({
+    mutationFn: cancelPomodoroFocusSession,
   })
 }

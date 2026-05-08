@@ -56,6 +56,16 @@ export const createPomodoroSessionSchema = z.object({
     .refine(isValidDateTime, "Choose a valid completion time."),
 })
 
+export const startPomodoroSessionSchema = createPomodoroSessionSchema.pick({
+  subject: true,
+  taskLabel: true,
+})
+
+export const pomodoroSessionIdSchema = z
+  .string()
+  .trim()
+  .uuid("Choose a valid Pomodoro session.")
+
 export const pomodoroSessionModeSchema = z.enum(pomodoroModes)
 
 export const pomodoroSessionStatusSchema = z.enum(pomodoroStatuses)
