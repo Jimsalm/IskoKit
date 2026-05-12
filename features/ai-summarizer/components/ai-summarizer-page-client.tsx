@@ -1,16 +1,18 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
+  BookOpenTextIcon,
   ClipboardIcon,
-  FileTextIcon,
+  ListChecksIcon,
   LoaderCircleIcon,
-  PencilIcon,
+  NotebookPenIcon,
   PlusIcon,
-  RotateCcwIcon,
+  SparkleIcon,
   SparklesIcon,
   TriangleAlertIcon,
   UploadIcon,
+  ZapIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -20,7 +22,6 @@ import { SummaryHistory } from "@/features/ai-summarizer/components/summary-hist
 import {
   maxSourceTextLength,
   sourceTextPreviewLength,
-  summaryTypeLabels,
 } from "@/features/ai-summarizer/schemas"
 import {
   useCreateSummary,
@@ -40,15 +41,14 @@ import type {
   SummaryInputType,
   SummaryType,
 } from "@/features/ai-summarizer/types"
-import { summaryTypes } from "@/features/ai-summarizer/types"
 import { parseTagsText } from "@/features/notes/schemas"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -60,15 +60,9 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 function getDefaultTitle(text: string, fileName?: string) {
   if (fileName) {
@@ -81,12 +75,6 @@ function getDefaultTitle(text: string, fileName?: string) {
     .find(Boolean)
 
   return firstLine ? firstLine.slice(0, 120) : "Study summary"
-}
-
-function getPreview(content: string) {
-  const preview = content.replace(/\s+/g, " ").trim()
-
-  return preview.length > 520 ? `${preview.slice(0, 520)}...` : preview
 }
 
 function getGeneratedSummaryValues({
@@ -112,7 +100,34 @@ function getGeneratedSummaryValues({
   }
 }
 
+const analysisModes: Array<{
+  value: SummaryType
+  label: string
+  description: string
+  Icon: typeof ZapIcon
+}> = [
+  {
+    value: "quick_summary",
+    label: "Quick Summary",
+    description: "Fast extraction of core concepts.",
+    Icon: ZapIcon,
+  },
+  {
+    value: "exam_reviewer",
+    label: "Exam Reviewer",
+    description: "Structured notes for quiz prep.",
+    Icon: BookOpenTextIcon,
+  },
+  {
+    value: "key_points",
+    label: "Key Points",
+    description: "Actionable bullet points only.",
+    Icon: ListChecksIcon,
+  },
+]
+
 export function AiSummarizerPageClient() {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputType, setInputType] = useState<SummaryInputType>("pasted_text")
   const [sourceText, setSourceText] = useState("")
   const [summaryType, setSummaryType] = useState<SummaryType>("quick_summary")
@@ -123,7 +138,6 @@ export function AiSummarizerPageClient() {
   const [sourceError, setSourceError] = useState("")
   const [noteSubject, setNoteSubject] = useState("")
   const [noteTagsText, setNoteTagsText] = useState("")
-  const [isEditingSource, setIsEditingSource] = useState(false)
   const [isSourceDirty, setIsSourceDirty] = useState(false)
   const [showAllSummaries, setShowAllSummaries] = useState(false)
   const [deletingSummary, setDeletingSummary] = useState<Summary | null>(null)
@@ -137,10 +151,6 @@ export function AiSummarizerPageClient() {
   const hasGeneratedSummary = Boolean(generatedSummary)
   const isBusy = extractMutation.isPending || generateMutation.isPending
   const canGenerate = sourceTextLength > 0 && !isBusy
-  const shouldShowRecentSummaries =
-    hasGeneratedSummary ||
-    summariesQuery.isPending ||
-    Boolean(summariesQuery.data?.length)
   const summaryValues = useMemo(
     () =>
       getGeneratedSummaryValues({
@@ -170,7 +180,6 @@ export function AiSummarizerPageClient() {
     setSourceError("")
     setNoteSubject("")
     setNoteTagsText("")
-    setIsEditingSource(false)
     setIsSourceDirty(false)
   }
 
@@ -229,6 +238,28 @@ export function AiSummarizerPageClient() {
     }
   }
 
+  async function handlePasteFromClipboard() {
+    setInputType("pasted_text")
+    setSelectedFileLabel("")
+    setSourceError("")
+
+    try {
+      const text = await navigator.clipboard.readText()
+
+      if (!text.trim()) {
+        toast.error("Clipboard is empty.")
+        return
+      }
+
+      handleSourceTextChange(text, {
+        shouldMarkDirty: hasGeneratedSummary,
+      })
+      setSummaryTitle(getDefaultTitle(text))
+    } catch {
+      toast.error("Could not read from clipboard. Paste manually instead.")
+    }
+  }
+
   async function handleGenerate() {
     const content = sourceText.trim()
 
@@ -259,7 +290,6 @@ export function AiSummarizerPageClient() {
       setSummaryTitle(nextTitle)
       setSavedSummaryId(null)
       setIsSourceDirty(false)
-      setIsEditingSource(false)
       toast.success("Summary generated.")
     } catch (error) {
       toast.error(summaryMutationError(error))
@@ -328,145 +358,100 @@ export function AiSummarizerPageClient() {
     setSavedSummaryId(summary.id)
     setSourceText(summary.sourceTextPreview ?? "")
     setSourceError("")
-    setIsEditingSource(false)
     setIsSourceDirty(false)
     toast.success("Summary loaded.")
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className="mx-auto grid w-full max-w-6xl gap-6 font-[var(--font-manrope)] lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3">
           <h1 className="text-3xl font-semibold tracking-normal">
             AI Summarizer
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-            Create study-ready notes from readings, handouts, and class
-            materials.
+            Turn readings, handouts, and class materials into study notes.
           </p>
         </div>
-        {hasGeneratedSummary ? (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={
-              isBusy ||
-              createSummaryMutation.isPending ||
-              saveAsNoteMutation.isPending
-            }
-            onClick={handleNewSummary}
-          >
-            <PlusIcon data-icon="inline-start" />
-            New summary
-          </Button>
-        ) : null}
-      </div>
 
-      {!hasGeneratedSummary ? (
-        <Card className="w-full">
+        <Card className="rounded-2xl border-border/70 bg-card/75 shadow-sm">
           <CardHeader>
-            <CardTitle>Source material</CardTitle>
-            <CardDescription>
-              Start with pasted text or a readable class file.
-            </CardDescription>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Source Material
+            </CardTitle>
+            <CardAction>
+              <Badge variant="secondary" className="font-normal">
+                {sourceTextLength.toLocaleString()} /{" "}
+                {maxSourceTextLength.toLocaleString()} chars
+              </Badge>
+            </CardAction>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col gap-4">
             <FieldGroup>
               <Field>
-                <FieldLabel>Input source</FieldLabel>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={inputType === "pasted_text" ? "secondary" : "outline"}
-                    aria-pressed={inputType === "pasted_text"}
-                    onClick={() => {
-                      setInputType("pasted_text")
-                      setSelectedFileLabel("")
-                      setSourceError("")
-                    }}
-                  >
-                    <ClipboardIcon data-icon="inline-start" />
-                    Paste text
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      inputType === "uploaded_file" ? "secondary" : "outline"
+                <FieldLabel htmlFor="source-text" className="sr-only">
+                  Source material
+                </FieldLabel>
+                <div className="relative">
+                  <Textarea
+                    id="source-text"
+                    value={sourceText}
+                    placeholder="Paste your text, URL, or raw transcript here..."
+                    className="min-h-[20rem] resize-none rounded-lg border-border/70 bg-background/40 pb-16 leading-6"
+                    disabled={extractMutation.isPending}
+                    onChange={(event) =>
+                      handleSourceTextChange(event.target.value, {
+                        shouldClearSummary: false,
+                        shouldMarkDirty: hasGeneratedSummary,
+                      })
                     }
-                    aria-pressed={inputType === "uploaded_file"}
-                    onClick={() => {
-                      setInputType("uploaded_file")
-                      setSourceError("")
-                    }}
-                  >
-                    <UploadIcon data-icon="inline-start" />
-                    Upload file
-                  </Button>
-                </div>
-              </Field>
-
-              {inputType === "uploaded_file" ? (
-                <Field>
-                  <FieldLabel htmlFor="summary-file">File</FieldLabel>
+                  />
+                  <div className="absolute bottom-3 right-3 flex flex-wrap justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void handlePasteFromClipboard()}
+                    >
+                      <ClipboardIcon data-icon="inline-start" />
+                      Paste
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={extractMutation.isPending}
+                      onClick={() => {
+                        setInputType("uploaded_file")
+                        setSourceError("")
+                        fileInputRef.current?.click()
+                      }}
+                    >
+                      {extractMutation.isPending ? (
+                        <LoaderCircleIcon
+                          data-icon="inline-start"
+                          className="animate-spin"
+                        />
+                      ) : (
+                        <UploadIcon data-icon="inline-start" />
+                      )}
+                      Upload
+                    </Button>
+                  </div>
                   <Input
-                    id="summary-file"
+                    ref={fileInputRef}
                     type="file"
                     accept=".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    className="sr-only"
                     disabled={extractMutation.isPending}
                     onChange={handleFileChange}
                   />
-                  <FieldDescription>
-                    TXT, DOCX, or text-based PDF up to 5 MB.
-                  </FieldDescription>
-                  {selectedFileLabel ? (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedFileLabel}
-                    </p>
-                  ) : null}
-                </Field>
-              ) : null}
-
-              <Field>
-                <FieldLabel htmlFor="source-text">Material</FieldLabel>
-                <Textarea
-                  id="source-text"
-                  value={sourceText}
-                  placeholder="Paste your study material here."
-                  className="min-h-80"
-                  disabled={extractMutation.isPending}
-                  onChange={(event) =>
-                    handleSourceTextChange(event.target.value, {
-                      shouldClearSummary: true,
-                    })
-                  }
-                />
+                </div>
                 <FieldDescription>
-                  {sourceTextLength.toLocaleString()} /{" "}
-                  {maxSourceTextLength.toLocaleString()} characters
+                  {selectedFileLabel
+                    ? `Uploaded: ${selectedFileLabel}`
+                    : "Supports TXT, DOCX, or text-based PDF up to 5 MB."}
                 </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="summary-type">Summary mode</FieldLabel>
-                <Select
-                  value={summaryType}
-                  onValueChange={(value) =>
-                    setSummaryType(value as SummaryType)
-                  }
-                >
-                  <SelectTrigger id="summary-type" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {summaryTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {summaryTypeLabels[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
               </Field>
 
               {sourceError ? (
@@ -478,120 +463,113 @@ export function AiSummarizerPageClient() {
               ) : null}
             </FieldGroup>
           </CardContent>
-          <CardFooter>
-            <Button
-              type="button"
-              disabled={!canGenerate}
-              onClick={() => void handleGenerate()}
-            >
-              {isBusy ? (
-                <LoaderCircleIcon
-                  data-icon="inline-start"
-                  className="animate-spin"
-                />
-              ) : (
-                <SparklesIcon data-icon="inline-start" />
-              )}
-              Generate summary
-            </Button>
-          </CardFooter>
         </Card>
-      ) : (
-        <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex flex-col gap-1.5">
-                <CardTitle>Source material</CardTitle>
-                <CardDescription>
-                  Original material used for this summary.
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Analysis Mode
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {analysisModes.map(({ Icon, ...mode }) => (
+              <button
+                key={mode.value}
+                type="button"
+                aria-pressed={summaryType === mode.value}
+                className={cn(
+                  "flex min-h-28 flex-col gap-2 rounded-lg border border-border/70 bg-card/65 p-4 text-left transition-all hover:border-primary/40 hover:bg-card/90",
+                  summaryType === mode.value &&
+                    "border-primary/60 bg-primary/10 text-primary ring-1 ring-primary/25",
+                )}
+                onClick={() => setSummaryType(mode.value)}
+              >
+                <Icon className="size-5" />
+                <span className="text-sm font-semibold">{mode.label}</span>
+                <span className="text-xs leading-5 text-muted-foreground">
+                  {mode.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          size="lg"
+          className="w-full shadow-lg shadow-primary/15 sm:w-fit"
+          disabled={!canGenerate || hasGeneratedSummary}
+          onClick={() => void handleGenerate()}
+        >
+          {isBusy ? (
+            <LoaderCircleIcon
+              data-icon="inline-start"
+              className="animate-spin"
+            />
+          ) : (
+            <SparklesIcon data-icon="inline-start" />
+          )}
+          Generate Summary
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-6 lg:sticky lg:top-8 lg:self-start">
+        <Card className="rounded-2xl border-border/70 bg-card/75 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Output Preview
+            </CardTitle>
+            {hasGeneratedSummary ? (
+              <CardAction>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsEditingSource((current) => !current)}
+                  size="sm"
+                  disabled={
+                    isBusy ||
+                    createSummaryMutation.isPending ||
+                    saveAsNoteMutation.isPending
+                  }
+                  onClick={handleNewSummary}
                 >
-                  <PencilIcon data-icon="inline-start" />
-                  {isEditingSource ? "Done editing" : "Edit source"}
+                  <PlusIcon data-icon="inline-start" />
+                  Start new summary
                 </Button>
-                {isSourceDirty ? (
-                  <Badge variant="secondary">Regenerate before saving</Badge>
-                ) : null}
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isEditingSource ? (
+              </CardAction>
+            ) : null}
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            {hasGeneratedSummary ? (
+              <>
                 <FieldGroup>
                   <Field>
-                    <FieldLabel htmlFor="review-source-text">Material</FieldLabel>
-                    <Textarea
-                      id="review-source-text"
-                      value={sourceText}
-                      className="min-h-56"
-                      onChange={(event) =>
-                        handleSourceTextChange(event.target.value, {
-                          shouldMarkDirty: true,
-                        })
-                      }
+                    <FieldLabel htmlFor="summary-title">Title</FieldLabel>
+                    <Input
+                      id="summary-title"
+                      value={summaryTitle}
+                      onChange={(event) => {
+                        setSummaryTitle(event.target.value)
+                        setSavedSummaryId(null)
+                      }}
                     />
-                    <FieldDescription>
-                      {sourceTextLength.toLocaleString()} /{" "}
-                      {maxSourceTextLength.toLocaleString()} characters
-                    </FieldDescription>
                   </Field>
-                  {sourceError ? (
-                    <Alert variant="destructive">
-                      <TriangleAlertIcon />
-                      <AlertTitle>Could not prepare material</AlertTitle>
-                      <AlertDescription>{sourceError}</AlertDescription>
-                    </Alert>
-                  ) : null}
                 </FieldGroup>
-              ) : (
-                <div className="line-clamp-3 rounded-xl border bg-muted/30 p-4 text-sm leading-6 text-muted-foreground">
-                  {getPreview(sourceText) || "Saved source preview unavailable."}
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Generated summary</CardTitle>
-              <CardDescription>
-                {isSourceDirty
-                  ? "Regenerate after editing the source before saving."
-                  : "Review the result, then copy it or save it to Notes."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="summary-title">Title</FieldLabel>
-                  <Input
-                    id="summary-title"
-                    value={summaryTitle}
-                    onChange={(event) => {
-                      setSummaryTitle(event.target.value)
-                      setSavedSummaryId(null)
-                    }}
-                  />
-                </Field>
-              </FieldGroup>
+                {isSourceDirty ? (
+                  <Alert>
+                    <TriangleAlertIcon />
+                    <AlertTitle>Source changed</AlertTitle>
+                    <AlertDescription>
+                      Generate again before saving this summary to Notes.
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
 
-              <div className="min-h-80 whitespace-pre-wrap rounded-xl border bg-muted/30 p-4 text-sm leading-6">
-                {generatedSummary}
-              </div>
+                <ScrollArea className="h-[28rem] rounded-lg border border-border/70 bg-background/40">
+                  <div className="whitespace-pre-wrap p-4 text-sm leading-6">
+                    {generatedSummary}
+                  </div>
+                </ScrollArea>
 
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-sm font-medium">Save details</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Add optional organization before saving to Notes.
-                  </p>
-                </div>
-                <FieldGroup>
+                <div className="grid gap-3 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="note-subject">
                       Optional subject
@@ -608,17 +586,30 @@ export function AiSummarizerPageClient() {
                     <Input
                       id="note-tags"
                       value={noteTagsText}
-                      placeholder="exam, reviewer, week 4"
+                      placeholder="exam, reviewer"
                       onChange={(event) => setNoteTagsText(event.target.value)}
                     />
-                    <FieldDescription>
-                      Separate tags with commas.
-                    </FieldDescription>
                   </Field>
-                </FieldGroup>
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-44 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/70 bg-background/30 p-8 text-center">
+                <span className="grid size-11 place-items-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+                  <SparkleIcon />
+                </span>
+                <div className="flex max-w-xs flex-col gap-2">
+                  <p className="text-sm font-medium">
+                    Your generated summary will appear here.
+                  </p>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    Add source material, choose an analysis mode, then generate.
+                  </p>
+                </div>
               </div>
-            </CardContent>
-            <CardFooter className="flex flex-wrap gap-2">
+            )}
+          </CardContent>
+          {hasGeneratedSummary ? (
+            <CardFooter className="flex flex-wrap gap-2 border-border/70 bg-transparent">
               <Button
                 type="button"
                 variant="outline"
@@ -626,22 +617,6 @@ export function AiSummarizerPageClient() {
               >
                 <ClipboardIcon data-icon="inline-start" />
                 Copy
-              </Button>
-              <Button
-                type="button"
-                variant={isSourceDirty ? "secondary" : "outline"}
-                disabled={!canGenerate}
-                onClick={() => void handleGenerate()}
-              >
-                {generateMutation.isPending ? (
-                  <LoaderCircleIcon
-                    data-icon="inline-start"
-                    className="animate-spin"
-                  />
-                ) : (
-                  <RotateCcwIcon data-icon="inline-start" />
-                )}
-                Regenerate
               </Button>
               <Button
                 type="button"
@@ -660,52 +635,53 @@ export function AiSummarizerPageClient() {
                     className="animate-spin"
                   />
                 ) : (
-                  <FileTextIcon data-icon="inline-start" />
+                  <NotebookPenIcon data-icon="inline-start" />
                 )}
-                Save to Notes
+                Save
               </Button>
             </CardFooter>
-          </Card>
-        </div>
-      )}
+          ) : null}
+        </Card>
 
-      {shouldShowRecentSummaries ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-base font-semibold">Recent summaries</h2>
-              <p className="text-sm text-muted-foreground">
-                Your latest saved study summaries.
-              </p>
-            </div>
-            {summariesQuery.data?.length ? (
-              <Badge variant="secondary">
-                {summariesQuery.data.length}{" "}
-                {summariesQuery.data.length === 1 ? "summary" : "summaries"}
-              </Badge>
+        <Card className="rounded-2xl border-border/70 bg-card/75 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Recent Summaries
+            </CardTitle>
+            {(summariesQuery.data?.length ?? 0) > 3 ? (
+              <CardAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAllSummaries(!showAllSummaries)}
+                >
+                  {showAllSummaries ? "Latest" : "View All"}
+                </Button>
+              </CardAction>
             ) : null}
-          </div>
-
-          {summariesQuery.isError ? (
-            <Alert variant="destructive">
-              <TriangleAlertIcon />
-              <AlertTitle>Could not load summaries</AlertTitle>
-              <AlertDescription>
-                {summaryMutationError(summariesQuery.error)}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <SummaryHistory
-              summaries={summariesQuery.data ?? []}
-              isLoading={summariesQuery.isPending}
-              showAll={showAllSummaries}
-              onShowAllChange={setShowAllSummaries}
-              onUse={handleUseSavedSummary}
-              onDelete={setDeletingSummary}
-            />
-          )}
-        </section>
-      ) : null}
+          </CardHeader>
+          <CardContent>
+            {summariesQuery.isError ? (
+              <Alert variant="destructive">
+                <TriangleAlertIcon />
+                <AlertTitle>Could not load summaries</AlertTitle>
+                <AlertDescription>
+                  {summaryMutationError(summariesQuery.error)}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <SummaryHistory
+                summaries={summariesQuery.data ?? []}
+                isLoading={summariesQuery.isPending}
+                showAll={showAllSummaries}
+                onUse={handleUseSavedSummary}
+                onDelete={setDeletingSummary}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <SummaryDeleteDialog
         summary={deletingSummary}
