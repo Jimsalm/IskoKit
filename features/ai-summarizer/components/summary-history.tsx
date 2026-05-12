@@ -40,14 +40,12 @@ export function SummaryHistory({
   summaries,
   isLoading,
   showAll,
-  onShowAllChange,
   onUse,
   onDelete,
 }: {
   summaries: Summary[]
   isLoading: boolean
   showAll: boolean
-  onShowAllChange: (showAll: boolean) => void
   onUse: (summary: Summary) => void
   onDelete: (summary: Summary) => void
 }) {
@@ -57,7 +55,7 @@ export function SummaryHistory({
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-center gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10"
+            className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/35 p-3"
           >
             <Skeleton className="size-8 rounded-lg" />
             <div className="flex flex-1 flex-col gap-2">
@@ -72,7 +70,7 @@ export function SummaryHistory({
 
   if (!summaries.length) {
     return (
-      <Empty className="min-h-0 border-0 bg-muted/30 p-4">
+      <Empty className="min-h-0 border border-dashed bg-background/30 p-4">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <SparklesIcon />
@@ -87,16 +85,15 @@ export function SummaryHistory({
   }
 
   const visibleSummaries = showAll ? summaries : summaries.slice(0, 3)
-  const hasMoreSummaries = summaries.length > 3
 
   return (
     <div className="flex flex-col gap-2">
       {visibleSummaries.map((summary) => (
         <div
           key={summary.id}
-          className="flex flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-foreground/10 sm:flex-row sm:items-center"
+          className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/35 p-3 transition-colors hover:bg-background/55 sm:flex-row sm:items-center"
         >
-          <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+          <div className="shrink-0 text-primary">
             <FileTextIcon />
           </div>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -136,17 +133,6 @@ export function SummaryHistory({
           </div>
         </div>
       ))}
-
-      {hasMoreSummaries ? (
-        <Button
-          type="button"
-          variant="ghost"
-          className="self-start"
-          onClick={() => onShowAllChange(!showAll)}
-        >
-          {showAll ? "Show latest 3" : "View all"}
-        </Button>
-      ) : null}
     </div>
   )
 }
