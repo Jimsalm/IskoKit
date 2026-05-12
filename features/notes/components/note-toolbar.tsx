@@ -1,9 +1,8 @@
 "use client"
 
-import { PlusIcon, SearchIcon } from "lucide-react"
+import { SearchIcon } from "lucide-react"
 
 import type { NotesSort } from "@/features/notes/types"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -22,7 +21,6 @@ export function NoteToolbar({
   subject,
   subjects,
   sort,
-  onCreate,
   onSearchChange,
   onSubjectChange,
   onSortChange,
@@ -31,13 +29,12 @@ export function NoteToolbar({
   subject: string
   subjects: string[]
   sort: NotesSort
-  onCreate: () => void
   onSearchChange: (value: string) => void
   onSubjectChange: (value: string) => void
   onSortChange: (value: NotesSort) => void
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 rounded-md border bg-card/60 p-3 sm:flex-row sm:items-center">
       <div className="relative min-w-0 flex-1">
         <SearchIcon className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -79,10 +76,6 @@ export function NoteToolbar({
           </SelectContent>
         </Select>
 
-        <Button onClick={onCreate}>
-          <PlusIcon data-icon="inline-start" />
-          New note
-        </Button>
       </div>
     </div>
   )

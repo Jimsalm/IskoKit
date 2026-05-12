@@ -20,7 +20,7 @@ export function NotesEmpty({
   onCreate: () => void
 }) {
   return (
-    <Empty className="border border-border bg-card">
+    <Empty className="border bg-card/70">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           {hasNotes ? <SearchIcon /> : <NotebookTabsIcon />}

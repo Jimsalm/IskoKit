@@ -1,6 +1,7 @@
 "use client"
 
 import type { Note } from "@/features/notes/types"
+import { Badge } from "@/components/ui/badge"
 import { NoteCard } from "@/features/notes/components/note-card"
 import { NotesEmpty } from "@/features/notes/components/notes-empty"
 
@@ -17,11 +18,11 @@ function NoteSection({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-muted-foreground">{title}</h2>
-        <span className="text-xs text-muted-foreground">
+      <div className="flex items-center justify-between rounded-md border bg-card/50 px-4 py-3">
+        <h2 className="text-sm font-medium">{title}</h2>
+        <Badge variant="secondary">
           {notes.length} {notes.length === 1 ? "note" : "notes"}
-        </span>
+        </Badge>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (

@@ -40,7 +40,7 @@
   --font-sans: var(--font-plus-jakarta-sans), sans-serif;
   --font-serif: var(--font-lora), serif;
   --font-mono: var(--font-roboto-mono), monospace;
-  --radius: 1.25rem;
+  --radius: 0.75rem;
   --shadow-x: 2px;
   --shadow-y: 2px;
   --shadow-blur: 10px;
@@ -95,7 +95,7 @@
   --font-sans: var(--font-plus-jakarta-sans), sans-serif;
   --font-serif: var(--font-lora), serif;
   --font-mono: var(--font-roboto-mono), monospace;
-  --radius: 1.25rem;
+  --radius: 0.75rem;
   --shadow-x: 2px;
   --shadow-y: 2px;
   --shadow-blur: 10px;

@@ -42,7 +42,7 @@ export function NoteCard({
   const hiddenTagsCount = Math.max(note.tags.length - visibleTags.length, 0)
 
   return (
-    <Card>
+    <Card className="bg-card/70 transition-all hover:-translate-y-0.5 hover:border-primary/40">
       <CardHeader>
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -50,9 +50,9 @@ export function NoteCard({
               {note.isPinned ? (
                 <PinIcon className="shrink-0 text-primary" />
               ) : null}
-              <CardTitle className="truncate">{note.title}</CardTitle>
+              <CardTitle className="truncate text-lg">{note.title}</CardTitle>
             </div>
-            <CardDescription className="line-clamp-2">
+            <CardDescription className="line-clamp-3 leading-6">
               {getPreview(note.content)}
             </CardDescription>
           </div>
@@ -109,7 +109,7 @@ export function NoteCard({
         ) : null}
       </CardContent>
 
-      <CardFooter className="justify-between text-xs text-muted-foreground">
+      <CardFooter className="justify-between gap-3 text-xs text-muted-foreground">
         <span>Created {formatNoteDate(note.createdAt)}</span>
         <span>Updated {formatNoteDate(note.updatedAt)}</span>
       </CardFooter>

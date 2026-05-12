@@ -8,7 +8,7 @@ export function NotesLoading() {
       {Array.from({ length: 6 }).map((_, index) => (
         <div
           key={index}
-          className="flex flex-col gap-4 rounded-xl bg-card p-4 ring-1 ring-foreground/10"
+          className="flex flex-col gap-4 rounded-md bg-card/70 p-4 ring-1 ring-foreground/10"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-1 flex-col gap-2">
@@ -16,7 +16,7 @@ export function NotesLoading() {
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-4/5" />
             </div>
-            <Skeleton className="size-7 rounded-lg" />
+            <Skeleton className="size-7 rounded-md" />
           </div>
           <div className="flex gap-2">
             <Skeleton className="h-5 w-16 rounded-full" />
