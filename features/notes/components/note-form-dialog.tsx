@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -128,102 +129,104 @@ function NoteFormDialogContent({
   }
 
   return (
-    <DialogContent className="sm:max-w-2xl">
+    <DialogContent className="max-h-[calc(100dvh-2rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <FieldGroup className="gap-4">
-          <Field data-invalid={Boolean(errors.title)}>
-            <FieldLabel htmlFor="note-title">Title</FieldLabel>
-            <Input
-              id="note-title"
-              value={formState.title}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  title: event.target.value,
-                }))
-              }
-              disabled={isSubmitting}
-              aria-invalid={Boolean(errors.title)}
-            />
-            <FieldError>{errors.title}</FieldError>
-          </Field>
-
-          <Field data-invalid={Boolean(errors.content)}>
-            <FieldLabel htmlFor="note-content">Content</FieldLabel>
-            <Textarea
-              id="note-content"
-              value={formState.content}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  content: event.target.value,
-                }))
-              }
-              className="min-h-48 resize-y"
-              disabled={isSubmitting}
-              aria-invalid={Boolean(errors.content)}
-            />
-            <FieldError>{errors.content}</FieldError>
-          </Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field data-invalid={Boolean(errors.subject)}>
-              <FieldLabel htmlFor="note-subject">Subject</FieldLabel>
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-col gap-4">
+        <DialogBody className="flex-1">
+          <FieldGroup className="gap-4">
+            <Field data-invalid={Boolean(errors.title)}>
+              <FieldLabel htmlFor="note-title">Title</FieldLabel>
               <Input
-                id="note-subject"
-                value={formState.subject}
+                id="note-title"
+                value={formState.title}
                 onChange={(event) =>
                   setFormState((current) => ({
                     ...current,
-                    subject: event.target.value,
+                    title: event.target.value,
                   }))
                 }
-                placeholder="Optional"
                 disabled={isSubmitting}
-                aria-invalid={Boolean(errors.subject)}
+                aria-invalid={Boolean(errors.title)}
               />
-              <FieldError>{errors.subject}</FieldError>
+              <FieldError>{errors.title}</FieldError>
             </Field>
 
-            <Field data-invalid={Boolean(errors.tags)}>
-              <FieldLabel htmlFor="note-tags">Tags</FieldLabel>
-              <Input
-                id="note-tags"
-                value={formState.tagsText}
+            <Field data-invalid={Boolean(errors.content)}>
+              <FieldLabel htmlFor="note-content">Content</FieldLabel>
+              <Textarea
+                id="note-content"
+                value={formState.content}
                 onChange={(event) =>
                   setFormState((current) => ({
                     ...current,
-                    tagsText: event.target.value,
+                    content: event.target.value,
                   }))
                 }
-                placeholder="exam, biology, chapter 3"
+                className="min-h-48 resize-none"
                 disabled={isSubmitting}
-                aria-invalid={Boolean(errors.tags)}
+                aria-invalid={Boolean(errors.content)}
               />
-              <FieldError>{errors.tags}</FieldError>
+              <FieldError>{errors.content}</FieldError>
             </Field>
-          </div>
 
-          <Field orientation="horizontal">
-            <Checkbox
-              id="note-pinned"
-              checked={formState.isPinned}
-              onCheckedChange={(checked) =>
-                setFormState((current) => ({
-                  ...current,
-                  isPinned: checked === true,
-                }))
-              }
-              disabled={isSubmitting}
-            />
-            <FieldLabel htmlFor="note-pinned">Pin this note</FieldLabel>
-          </Field>
-        </FieldGroup>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field data-invalid={Boolean(errors.subject)}>
+                <FieldLabel htmlFor="note-subject">Subject</FieldLabel>
+                <Input
+                  id="note-subject"
+                  value={formState.subject}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      subject: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional"
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.subject)}
+                />
+                <FieldError>{errors.subject}</FieldError>
+              </Field>
+
+              <Field data-invalid={Boolean(errors.tags)}>
+                <FieldLabel htmlFor="note-tags">Tags</FieldLabel>
+                <Input
+                  id="note-tags"
+                  value={formState.tagsText}
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      tagsText: event.target.value,
+                    }))
+                  }
+                  placeholder="exam, biology, chapter 3"
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.tags)}
+                />
+                <FieldError>{errors.tags}</FieldError>
+              </Field>
+            </div>
+
+            <Field orientation="horizontal">
+              <Checkbox
+                id="note-pinned"
+                checked={formState.isPinned}
+                onCheckedChange={(checked) =>
+                  setFormState((current) => ({
+                    ...current,
+                    isPinned: checked === true,
+                  }))
+                }
+                disabled={isSubmitting}
+              />
+              <FieldLabel htmlFor="note-pinned">Pin this note</FieldLabel>
+            </Field>
+          </FieldGroup>
+        </DialogBody>
 
         <DialogFooter>
           <Button

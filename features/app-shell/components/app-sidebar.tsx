@@ -93,7 +93,11 @@ function SidebarSection({
           )}
         />
       </button>
-      {isOpen ? <div className="flex flex-col gap-1">{children}</div> : null}
+      {isOpen ? (
+        <div className="ml-4 flex flex-col gap-1 border-l pl-3">
+          {children}
+        </div>
+      ) : null}
     </div>
   )
 }

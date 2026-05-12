@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 function formatNoteDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -42,74 +43,88 @@ export function NoteCard({
   const hiddenTagsCount = Math.max(note.tags.length - visibleTags.length, 0)
 
   return (
-    <Card className="bg-card/70 transition-all hover:-translate-y-0.5 hover:border-primary/40">
-      <CardHeader>
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              {note.isPinned ? (
-                <PinIcon className="shrink-0 text-primary" />
-              ) : null}
-              <CardTitle className="truncate text-lg">{note.title}</CardTitle>
-            </div>
-            <CardDescription className="line-clamp-3 leading-6">
-              {getPreview(note.content)}
-            </CardDescription>
-          </div>
-          <CardAction className="flex gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Edit ${note.title}`}
-              onClick={() => onEdit(note)}
-            >
-              <EditIcon />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Delete ${note.title}`}
-              onClick={() => onDelete(note)}
-            >
-              <Trash2Icon />
-            </Button>
-          </CardAction>
-        </div>
+    <Card
+      className={cn(
+        "border-border/70 bg-card/75 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card/95 hover:shadow-sm",
+        note.isPinned && "border-primary/25 bg-primary/5",
+      )}
+    >
+      <CardHeader className="gap-2">
+        <CardTitle className="flex min-w-0 items-center gap-2 pr-3 text-base font-semibold">
+          {note.isPinned ? (
+            <PinIcon className="shrink-0 text-primary" />
+          ) : null}
+          <span className="truncate">{note.title}</span>
+        </CardTitle>
+        <CardDescription className="line-clamp-3 leading-6 text-muted-foreground">
+          {getPreview(note.content)}
+        </CardDescription>
+        <CardAction className="flex gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Edit ${note.title}`}
+            onClick={() => onEdit(note)}
+          >
+            <EditIcon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={`Delete ${note.title}`}
+            onClick={() => onDelete(note)}
+          >
+            <Trash2Icon />
+          </Button>
+        </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-1 flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {note.subject ? (
-            <Badge variant="secondary">{note.subject}</Badge>
+            <Badge variant="secondary" className="rounded-full">
+              {note.subject}
+            </Badge>
           ) : null}
           {note.source === "ai_summary" ? (
-            <Badge>
+            <Badge
+              variant="outline"
+              className="rounded-full border-primary/25 bg-primary/10 text-primary"
+            >
               <SparklesIcon data-icon="inline-start" />
               AI Summary
             </Badge>
           ) : null}
           {note.source === "imported" ? (
-            <Badge variant="outline">Imported</Badge>
+            <Badge variant="outline" className="rounded-full">
+              Imported
+            </Badge>
           ) : null}
         </div>
 
         {note.tags.length ? (
           <div className="flex flex-wrap gap-2">
             {visibleTags.map((tag) => (
-              <Badge key={tag} variant="outline">
+              <Badge
+                key={tag}
+                variant="outline"
+                className="rounded-full text-muted-foreground"
+              >
                 {tag}
               </Badge>
             ))}
             {hiddenTagsCount ? (
-              <Badge variant="ghost">+{hiddenTagsCount}</Badge>
+              <Badge variant="ghost" className="rounded-full">
+                +{hiddenTagsCount}
+              </Badge>
             ) : null}
           </div>
         ) : null}
       </CardContent>
 
-      <CardFooter className="justify-between gap-3 text-xs text-muted-foreground">
+      <CardFooter className="justify-between gap-3 border-border/70 bg-transparent text-xs text-muted-foreground">
         <span>Created {formatNoteDate(note.createdAt)}</span>
         <span>Updated {formatNoteDate(note.updatedAt)}</span>
       </CardFooter>

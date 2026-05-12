@@ -6,21 +6,26 @@ import { NoteCard } from "@/features/notes/components/note-card"
 import { NotesEmpty } from "@/features/notes/components/notes-empty"
 
 function NoteSection({
+  description,
   title,
   notes,
   onEdit,
   onDelete,
 }: {
+  description: string
   title: string
   notes: Note[]
   onEdit: (note: Note) => void
   onDelete: (note: Note) => void
 }) {
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between rounded-md border bg-card/50 px-4 py-3">
-        <h2 className="text-sm font-medium">{title}</h2>
-        <Badge variant="secondary">
+    <section className="flex flex-col gap-4">
+      <div className="flex items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h2 className="text-base font-medium">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        <Badge variant="secondary" className="shrink-0">
           {notes.length} {notes.length === 1 ? "note" : "notes"}
         </Badge>
       </div>
@@ -62,6 +67,7 @@ export function NoteGrid({
     return (
       <div className="flex flex-col gap-6">
         <NoteSection
+          description="Saved for quick access and shown before the rest."
           title="Pinned"
           notes={pinnedNotes}
           onEdit={onEdit}
@@ -70,7 +76,8 @@ export function NoteGrid({
 
         {otherNotes.length ? (
           <NoteSection
-            title="Other notes"
+            description="All remaining notes sorted by your current view."
+            title="Other Notes"
             notes={otherNotes}
             onEdit={onEdit}
             onDelete={onDelete}

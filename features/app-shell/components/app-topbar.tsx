@@ -27,14 +27,6 @@ export function AppTopbar({ userEmail }: { userEmail?: string | null }) {
           <span className="text-base font-semibold">IskoKit</span>
         </Link>
       </div>
-      <div className="relative hidden w-full max-w-xl md:block">
-        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          disabled
-          className="h-11 rounded-xl border-border/80 bg-muted/30 pl-10"
-          placeholder="Search tools, files, or actions..."
-        />
-      </div>
 
       <div className="flex items-center gap-3 md:ml-auto">
         <Button

@@ -17,7 +17,9 @@ import type { Note, NoteFormValues, NotesFilterState } from "@/features/notes/ty
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -57,25 +59,36 @@ function sortNotes(notes: Note[], sort: NotesFilterState["sort"]) {
 }
 
 function NotesStatCard({
+  helper,
   icon: Icon,
   label,
   value,
 }: {
+  helper: string
   icon: LucideIcon
   label: string
   value: number
 }) {
   return (
-    <Card className="bg-card/70">
-      <CardHeader className="flex-row items-center justify-between gap-3">
-        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
-        <span className="text-primary">
-          <Icon />
-        </span>
+    <Card className="border border-border/70 bg-card/80 ring-0">
+      <CardHeader>
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {label}
+        </CardTitle>
+        <CardAction>
+          <span className="grid size-9 place-items-center rounded-md border border-border/70 bg-primary/10 text-primary">
+            <Icon />
+          </span>
+        </CardAction>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-semibold">{value}</p>
+        <p className="text-4xl leading-none font-semibold tracking-normal">
+          {value}
+        </p>
       </CardContent>
+      <CardFooter className="border-border/70 bg-transparent text-xs leading-5 text-muted-foreground">
+        {helper}
+      </CardFooter>
     </Card>
   )
 }
@@ -182,21 +195,25 @@ export function NotesPageClient() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <NotesStatCard
+          helper="All saved study notes"
           icon={NotebookTabsIcon}
           label="Total notes"
           value={notesSummary.total}
         />
         <NotesStatCard
+          helper="Pinned notes stay first"
           icon={PinIcon}
           label="Pinned"
           value={notesSummary.pinned}
         />
         <NotesStatCard
+          helper="Available subject filters"
           icon={TagsIcon}
           label="Subjects"
           value={notesSummary.subjects}
         />
         <NotesStatCard
+          helper="Saved from AI summaries"
           icon={SparklesIcon}
           label="AI notes"
           value={notesSummary.aiNotes}
