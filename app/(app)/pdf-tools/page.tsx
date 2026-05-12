@@ -1,6 +1,8 @@
-import { ToolPlaceholder } from "@/features/app-shell/components/tool-placeholder"
-import { getAppTool } from "@/features/app-shell/tools"
+import { requireAuth } from "@/features/auth/server"
+import { PdfToolsHomePageClient } from "@/features/pdf-tools/components/pdf-tools-home-page-client"
 
-export default function PdfToolsPage() {
-  return <ToolPlaceholder tool={getAppTool("/pdf-tools")} />
+export default async function PdfToolsPage() {
+  await requireAuth()
+
+  return <PdfToolsHomePageClient />
 }
