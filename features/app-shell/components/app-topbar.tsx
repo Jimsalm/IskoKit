@@ -1,10 +1,9 @@
 import Link from "next/link"
-import { BellIcon, SearchIcon } from "lucide-react"
+import { BellIcon } from "lucide-react"
 
 import { AppMobileMenu } from "@/features/app-shell/components/app-mobile-menu"
 import { LogoutButton } from "@/features/auth/components/logout-button"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 
 function getInitial(email?: string | null) {
@@ -13,7 +12,7 @@ function getInitial(email?: string | null) {
 
 export function AppTopbar({ userEmail }: { userEmail?: string | null }) {
   return (
-    <header className="flex h-20 shrink-0 items-center justify-between gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
+    <header className="flex h-20 shrink-0 items-center justify-between gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6 md:justify-end">
       <div className="flex items-center gap-3 md:hidden">
         <AppMobileMenu />
         <Link
@@ -21,7 +20,7 @@ export function AppTopbar({ userEmail }: { userEmail?: string | null }) {
           className="flex items-center gap-3"
           aria-label="IskoKit app"
         >
-          <span className="grid size-9 place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-md">
+          <span className="grid size-9 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
             I
           </span>
           <span className="text-base font-semibold">IskoKit</span>
@@ -43,7 +42,7 @@ export function AppTopbar({ userEmail }: { userEmail?: string | null }) {
           orientation="vertical"
           className="hidden h-8 data-vertical:h-8 sm:block"
         />
-        <div className="hidden items-center gap-3 rounded-xl border bg-muted/30 px-3 py-2 sm:flex">
+        <div className="hidden items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 sm:flex">
           <span className="grid size-9 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
             {getInitial(userEmail)}
           </span>
