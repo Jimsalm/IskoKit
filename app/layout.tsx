@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Lora, Plus_Jakarta_Sans, Roboto_Mono } from "next/font/google";
+import { Analytics } from '@vercel/analytics/next';
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -37,6 +38,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background font-sans text-foreground antialiased">
         {children}
+        <Analytics />
       </body>
     </html>
   );
