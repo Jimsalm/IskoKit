@@ -40,7 +40,7 @@ function SidebarLink({
       className={cn(
         "group flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
         isActive &&
-          "bg-primary/15 text-primary shadow-sm ring-1 ring-primary/15 hover:bg-primary/15 hover:text-primary",
+          "bg-primary/15 text-primary hover:bg-primary/15 hover:text-primary",
       )}
     >
       <Icon className="size-4" />
@@ -111,9 +111,9 @@ export function AppSidebar() {
   const pdfToolsActive = isRouteActive(pathname, "/pdf-tools")
 
   return (
-    <aside className="hidden min-h-screen w-64 shrink-0 border-r bg-background/95 md:flex md:flex-col">
-      <div className="flex h-20 items-center gap-3 px-5">
-        <IskoKitLogo className="size-10" />
+    <aside className="hidden min-h-screen w-64 shrink-0 border-r bg-background md:flex md:flex-col">
+      <div className="flex h-14 items-center gap-3 px-5">
+        <IskoKitLogo />
         <span className="text-lg font-semibold">IskoKit</span>
       </div>
 
