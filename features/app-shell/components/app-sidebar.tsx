@@ -179,6 +179,18 @@ export function AppSidebar() {
           <ComingSoonItem />
         </SidebarSection>
       </nav>
+
+      <footer className="border-t px-5 py-4 text-xs text-muted-foreground">
+        Developed by{" "}
+        <a
+          href="https://jimielsalmon.is-a.dev/"
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-foreground transition-colors hover:text-primary"
+        >
+          Jimiel Salmon
+        </a>
+      </footer>
     </aside>
   )
 }
