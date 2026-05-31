@@ -4,6 +4,7 @@ import { BellIcon } from "lucide-react"
 import { AppMobileMenu } from "@/features/app-shell/components/app-mobile-menu"
 import { LogoutButton } from "@/features/auth/components/logout-button"
 import { Button } from "@/components/ui/button"
+import { IskoKitLogo } from "@/components/iskokit-logo"
 import { Separator } from "@/components/ui/separator"
 
 function getInitial(email?: string | null) {
@@ -20,9 +21,7 @@ export function AppTopbar({ userEmail }: { userEmail?: string | null }) {
           className="flex items-center gap-3"
           aria-label="IskoKit app"
         >
-          <span className="grid size-9 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-            I
-          </span>
+          <IskoKitLogo />
           <span className="text-base font-semibold">IskoKit</span>
         </Link>
       </div>

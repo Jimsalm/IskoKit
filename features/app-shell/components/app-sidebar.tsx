@@ -11,10 +11,10 @@ import {
   FileImageIcon,
   FileTextIcon,
   HomeIcon,
-  InfoIcon,
   ShieldCheckIcon,
 } from "lucide-react"
 
+import { IskoKitLogo } from "@/components/iskokit-logo"
 import { appToolGroups } from "@/features/app-shell/tools"
 import { cn } from "@/lib/utils"
 
@@ -113,9 +113,7 @@ export function AppSidebar() {
   return (
     <aside className="hidden min-h-screen w-64 shrink-0 border-r bg-background/95 md:flex md:flex-col">
       <div className="flex h-20 items-center gap-3 px-5">
-        <span className="grid size-10 place-items-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-md">
-          <InfoIcon />
-        </span>
+        <IskoKitLogo className="size-10" />
         <span className="text-lg font-semibold">IskoKit</span>
       </div>
 

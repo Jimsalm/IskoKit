@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { IskoKitLogo } from "@/components/iskokit-logo"
 import { Separator } from "@/components/ui/separator"
 
 const initialState: RegisterActionState = {
@@ -19,7 +20,7 @@ const initialState: RegisterActionState = {
 }
 
 const inputClassName =
-  "h-9 rounded-full border-input bg-secondary px-3 text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-ring"
+  "h-10 rounded-md border-input bg-background px-3 text-foreground placeholder:text-muted-foreground focus-visible:border-ring"
 
 export function RegisterForm() {
   const [state, formAction, pending] = useActionState(
@@ -32,25 +33,23 @@ export function RegisterForm() {
   const confirmPasswordError = state.errors?.confirmPassword?.[0]
 
   return (
-    <div className="flex w-full flex-col gap-8">
-      <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-2xl bg-primary text-base font-semibold text-primary-foreground shadow-lg">
-            I
-          </div>
-          <span className="text-lg font-semibold">IskoKit</span>
+    <div className="flex w-full flex-col gap-7">
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center gap-3 lg:hidden">
+          <IskoKitLogo />
+          <span className="text-base font-semibold">IskoKit</span>
         </div>
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl leading-tight font-semibold">
+          <h1 className="text-2xl leading-tight font-semibold">
             Create an account
           </h1>
           <p className="max-w-sm text-sm leading-6 text-muted-foreground">
-            Enter your details below to get started
+            Set up your IskoKit account to get started.
           </p>
         </div>
       </div>
 
-      <div className="text-card-foreground">
+      <div className="text-foreground">
         <form action={formAction} className="flex flex-col gap-5">
           <FieldGroup className="gap-4">
             <Field className="gap-2" data-invalid={Boolean(emailError)}>
@@ -125,7 +124,7 @@ export function RegisterForm() {
           <Button
             type="submit"
             size="lg"
-            className="rounded-full shadow-lg"
+            className="w-full rounded-md"
             disabled={pending || state.success}
           >
             {pending ? (
@@ -140,8 +139,8 @@ export function RegisterForm() {
 
         <div className="my-5 flex items-center gap-3">
           <Separator className="min-w-0 flex-1 shrink data-horizontal:w-auto" />
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
-            OR
+          <span className="shrink-0 text-xs text-muted-foreground">
+            or
           </span>
           <Separator className="min-w-0 flex-1 shrink data-horizontal:w-auto" />
         </div>
@@ -150,14 +149,14 @@ export function RegisterForm() {
           type="button"
           variant="outline"
           size="lg"
-          className="w-full rounded-full"
+          className="w-full rounded-md"
           disabled
         >
-          Continue with Google
+          Google sign-in coming soon
         </Button>
       </div>
 
-      <p className="text-center text-sm text-muted-foreground">
+      <p className="border-t border-border pt-5 text-sm text-muted-foreground">
         Already have an account?{" "}
         <Button asChild variant="link" className="h-auto p-0">
           <Link href="/login">Sign in</Link>
