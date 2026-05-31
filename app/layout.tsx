@@ -21,8 +21,12 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IskoKit",
-  description: "A fresh IskoKit project.",
+  title: {
+    default: "IskoKit",
+    template: "%s | IskoKit",
+  },
+  description:
+    "Organize notes, deadlines, study sessions, flashcards, and school documents in one student workspace.",
 };
 
 export default function RootLayout({

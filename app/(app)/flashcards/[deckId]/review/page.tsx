@@ -1,6 +1,12 @@
+import type { Metadata } from "next"
+
 import { requireAuth } from "@/features/auth/server"
 import { ReviewPageClient } from "@/features/flashcards/components/review-page-client"
 import type { ReviewScope } from "@/features/flashcards/types"
+
+export const metadata: Metadata = {
+  title: "Review Flashcards",
+}
 
 export default async function FlashcardReviewPage({
   params,

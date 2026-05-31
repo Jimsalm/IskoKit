@@ -1,3 +1,5 @@
+import type { Metadata } from "next"
+
 import {
   Card,
   CardDescription,
@@ -6,6 +8,10 @@ import {
 } from "@/components/ui/card"
 import { appTools } from "@/features/app-shell/tools"
 import { requireAuth } from "@/features/auth/server"
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+}
 
 export default async function DashboardPage() {
   await requireAuth()

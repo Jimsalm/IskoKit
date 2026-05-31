@@ -1,7 +1,12 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { ForgotPasswordForm } from "@/features/auth/components/forgot-password-form"
 import { createClient } from "@/lib/supabase/server"
+
+export const metadata: Metadata = {
+  title: "Forgot password",
+}
 
 export default async function ForgotPasswordPage() {
   const supabase = await createClient()

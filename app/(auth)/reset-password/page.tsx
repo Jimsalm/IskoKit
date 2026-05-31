@@ -1,9 +1,14 @@
 import { cookies } from "next/headers"
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
 import { ResetPasswordForm } from "@/features/auth/components/reset-password-form"
 import { passwordRecoveryCookieName } from "@/features/auth/constants"
 import { createClient } from "@/lib/supabase/server"
+
+export const metadata: Metadata = {
+  title: "Reset password",
+}
 
 export default async function ResetPasswordPage() {
   const cookieStore = await cookies()
