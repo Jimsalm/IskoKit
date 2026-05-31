@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AppBackgroundPattern } from "@/features/app-shell/components/app-background-pattern"
+import { PageTransition } from "@/features/app-shell/components/app-motion"
 import { AppSidebar } from "@/features/app-shell/components/app-sidebar"
 import { AppTopbar } from "@/features/app-shell/components/app-topbar"
 import { AppProviders } from "@/features/app-shell/components/app-providers"
@@ -27,7 +28,7 @@ export default async function AppLayout({
             <AppBackgroundPattern />
             <ScrollArea className="relative h-full">
               <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                {children}
+                <PageTransition>{children}</PageTransition>
               </main>
             </ScrollArea>
           </div>

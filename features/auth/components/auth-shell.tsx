@@ -7,6 +7,10 @@ import {
 } from "lucide-react"
 
 import { IskoKitLogo } from "@/components/iskokit-logo"
+import {
+  AppMotionProvider,
+  MotionSurface,
+} from "@/features/app-shell/components/app-motion"
 
 const workspaceTools = [
   {
@@ -34,7 +38,8 @@ const workspaceTools = [
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="dark flex min-h-dvh items-center justify-center bg-background px-5 py-8 text-foreground sm:px-8">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
+      <AppMotionProvider>
+        <MotionSurface className="grid w-full max-w-4xl overflow-hidden rounded-lg border border-border bg-card lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
         <section className="hidden border-r border-border lg:flex lg:flex-col lg:justify-between">
           <div className="flex items-center gap-3 border-b border-border px-8 py-5">
             <IskoKitLogo />
@@ -82,7 +87,8 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         <section className="flex items-center justify-center px-6 py-8 sm:px-8 lg:px-10">
           <div className="w-full max-w-sm">{children}</div>
         </section>
-      </div>
+        </MotionSurface>
+      </AppMotionProvider>
     </main>
   )
 }

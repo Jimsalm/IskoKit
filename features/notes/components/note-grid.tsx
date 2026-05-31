@@ -2,6 +2,10 @@
 
 import type { Note } from "@/features/notes/types"
 import { Badge } from "@/components/ui/badge"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 import { NoteCard } from "@/features/notes/components/note-card"
 import { NotesEmpty } from "@/features/notes/components/notes-empty"
 
@@ -29,16 +33,13 @@ function NoteSection({
           {notes.length} {notes.length === 1 ? "note" : "notes"}
         </Badge>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <MotionList className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {notes.map((note) => (
-          <NoteCard
-            key={note.id}
-            note={note}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
+          <MotionListItem key={note.id} className="h-full">
+            <NoteCard note={note} onEdit={onEdit} onDelete={onDelete} />
+          </MotionListItem>
         ))}
-      </div>
+      </MotionList>
     </section>
   )
 }
@@ -88,15 +89,12 @@ export function NoteGrid({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <MotionList className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {notes.map((note) => (
-        <NoteCard
-          key={note.id}
-          note={note}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+        <MotionListItem key={note.id} className="h-full">
+          <NoteCard note={note} onEdit={onEdit} onDelete={onDelete} />
+        </MotionListItem>
       ))}
-    </div>
+    </MotionList>
   )
 }

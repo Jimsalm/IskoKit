@@ -36,6 +36,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 
 function formatFlashcardDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -134,13 +138,14 @@ export function FlashcardGrid({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <MotionList className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {flashcards.map((flashcard) => {
         const due = isFlashcardDue(flashcard)
         const mastered = isFlashcardMastered(flashcard)
 
         return (
-          <Card key={flashcard.id}>
+          <MotionListItem key={flashcard.id} className="h-full">
+            <Card>
             <CardHeader>
               <CardTitle className="line-clamp-2">
                 {flashcard.question}
@@ -204,9 +209,10 @@ export function FlashcardGrid({
             <CardFooter className="text-xs text-muted-foreground">
               Created {formatFlashcardDate(flashcard.createdAt)}
             </CardFooter>
-          </Card>
+            </Card>
+          </MotionListItem>
         )
       })}
-    </div>
+    </MotionList>
   )
 }

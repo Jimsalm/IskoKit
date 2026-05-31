@@ -63,6 +63,10 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import {
+  MotionPresence,
+  MotionSurface,
+} from "@/features/app-shell/components/app-motion"
 
 function getDefaultTitle(text: string, fileName?: string) {
   if (fileName) {
@@ -537,8 +541,9 @@ export function AiSummarizerPageClient() {
             ) : null}
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {hasGeneratedSummary ? (
-              <>
+            <MotionPresence mode="wait">
+              {hasGeneratedSummary ? (
+                <MotionSurface key="generated-summary" className="flex flex-col gap-4">
                 <FieldGroup>
                   <Field>
                     <FieldLabel htmlFor="summary-title">Title</FieldLabel>
@@ -591,9 +596,12 @@ export function AiSummarizerPageClient() {
                     />
                   </Field>
                 </div>
-              </>
-            ) : (
-              <div className="flex min-h-44 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/70 bg-background/30 p-8 text-center">
+                </MotionSurface>
+              ) : (
+                <MotionSurface
+                  key="summary-empty"
+                  className="flex min-h-44 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/70 bg-background/30 p-8 text-center"
+                >
                 <span className="grid size-11 place-items-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
                   <SparkleIcon />
                 </span>
@@ -605,8 +613,9 @@ export function AiSummarizerPageClient() {
                     Add source material, choose an analysis mode, then generate.
                   </p>
                 </div>
-              </div>
-            )}
+                </MotionSurface>
+              )}
+            </MotionPresence>
           </CardContent>
           {hasGeneratedSummary ? (
             <CardFooter className="flex flex-wrap gap-2 border-border/70 bg-transparent">

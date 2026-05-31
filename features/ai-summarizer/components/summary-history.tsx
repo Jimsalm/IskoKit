@@ -22,6 +22,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 
 function formatSummaryDate(value: string) {
   return new Intl.DateTimeFormat(undefined, {
@@ -87,9 +91,9 @@ export function SummaryHistory({
   const visibleSummaries = showAll ? summaries : summaries.slice(0, 3)
 
   return (
-    <div className="flex flex-col gap-2">
+    <MotionList className="flex flex-col gap-2">
       {visibleSummaries.map((summary) => (
-        <div
+        <MotionListItem
           key={summary.id}
           className="flex flex-col gap-3 rounded-xl border border-border/70 bg-background/35 p-3 transition-colors hover:bg-background/55 sm:flex-row sm:items-center"
         >
@@ -131,8 +135,8 @@ export function SummaryHistory({
               <Trash2Icon />
             </Button>
           </div>
-        </div>
+        </MotionListItem>
       ))}
-    </div>
+    </MotionList>
   )
 }

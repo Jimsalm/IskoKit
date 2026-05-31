@@ -15,6 +15,10 @@ import {
 import { GwaEmpty } from "@/features/gwa/components/gwa-empty"
 import { GwaError } from "@/features/gwa/components/gwa-error"
 import { GwaLoading } from "@/features/gwa/components/gwa-loading"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 import { formatGwaValue, formatUnitsValue } from "@/features/gwa/lib/calculate"
 import type { GwaRecordSummary } from "@/features/gwa/types"
 
@@ -71,12 +75,13 @@ export function GwaHistorySection({
         <GwaEmpty onCreate={onCreate} />
       ) : null}
       {!isLoading && !isError && records.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <MotionList className="grid gap-4 sm:grid-cols-2">
           {records.map((record) => {
             const isLoadingRecord = loadingRecordId === record.id
 
             return (
-              <Card key={record.id}>
+              <MotionListItem key={record.id} className="h-full">
+                <Card>
                 <CardHeader>
                   <div className="flex min-w-0 items-start gap-3">
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -152,10 +157,11 @@ export function GwaHistorySection({
                     Saved {formatCreatedAt(record.createdAt)}
                   </p>
                 </CardContent>
-              </Card>
+                </Card>
+              </MotionListItem>
             )
           })}
-        </div>
+        </MotionList>
       ) : null}
     </section>
   )

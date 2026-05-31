@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { Toaster } from "@/components/ui/sonner"
+import { AppMotionProvider } from "@/features/app-shell/components/app-motion"
 import { PomodoroFloatingTimer } from "@/features/pomodoro/components/pomodoro-floating-timer"
 import { PomodoroProvider } from "@/features/pomodoro/components/pomodoro-provider"
 
@@ -21,12 +22,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <PomodoroProvider>
-        {children}
-        <PomodoroFloatingTimer />
-      </PomodoroProvider>
-      <Toaster richColors theme="dark" />
-    </QueryClientProvider>
+    <AppMotionProvider>
+      <QueryClientProvider client={queryClient}>
+        <PomodoroProvider>
+          {children}
+          <PomodoroFloatingTimer />
+        </PomodoroProvider>
+        <Toaster richColors theme="dark" />
+      </QueryClientProvider>
+    </AppMotionProvider>
   )
 }

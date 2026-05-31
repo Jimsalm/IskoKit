@@ -20,6 +20,10 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 
 export function FlashcardPreviewList({
   flashcards,
@@ -51,9 +55,10 @@ export function FlashcardPreviewList({
           remaining cards to this deck.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent>
+        <MotionList className="flex flex-col gap-3">
         {flashcards.map((flashcard, index) => (
-          <div
+          <MotionListItem
             key={flashcard.previewId}
             className="flex flex-col gap-4 rounded-xl border bg-background p-3"
           >
@@ -116,8 +121,9 @@ export function FlashcardPreviewList({
                 />
               </Field>
             </FieldGroup>
-          </div>
+          </MotionListItem>
         ))}
+        </MotionList>
       </CardContent>
       <CardFooter className="justify-between gap-3">
         <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
+import { AnimatePresence, m } from "motion/react"
 import {
   BookOpenIcon,
   CalendarIcon,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react"
 
 import { IskoKitLogo } from "@/components/iskokit-logo"
+import { appMotionTransition } from "@/features/app-shell/components/app-motion"
 import { appToolGroups } from "@/features/app-shell/tools"
 import { cn } from "@/lib/utils"
 
@@ -93,11 +95,21 @@ function SidebarSection({
           )}
         />
       </button>
-      {isOpen ? (
-        <div className="ml-4 flex flex-col gap-1 border-l pl-3">
-          {children}
-        </div>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <m.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={appMotionTransition}
+            className="overflow-hidden"
+          >
+            <div className="ml-4 flex flex-col gap-1 border-l pl-3">
+              {children}
+            </div>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }

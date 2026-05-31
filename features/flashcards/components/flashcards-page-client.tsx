@@ -32,6 +32,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
 
 function DeckDashboardLoading() {
   return (
@@ -186,11 +190,13 @@ export function FlashcardsPageClient() {
       ) : null}
 
       {decks.length ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <MotionList className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {decks.map((deck) => (
-            <DeckCard key={deck.id} deck={deck} />
+            <MotionListItem key={deck.id} className="h-full">
+              <DeckCard deck={deck} />
+            </MotionListItem>
           ))}
-        </div>
+        </MotionList>
       ) : null}
     </section>
   )

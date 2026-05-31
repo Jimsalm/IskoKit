@@ -45,7 +45,7 @@ export function NoteCard({
   return (
     <Card
       className={cn(
-        "border-border/70 bg-card/75 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-card/95 hover:shadow-sm",
+        "border-border/70 bg-card/75 transition-colors hover:border-primary/30 hover:bg-card/95",
         note.isPinned && "border-primary/25 bg-primary/5",
       )}
     >

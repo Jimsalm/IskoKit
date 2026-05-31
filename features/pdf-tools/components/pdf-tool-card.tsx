@@ -41,7 +41,7 @@ export function PdfToolCard({
     >
       <Card
         className={cn(
-          "overflow-hidden rounded-md bg-card/70 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg [&_[data-slot=card-footer]]:rounded-b-md [&_[data-slot=card-header]]:rounded-t-md",
+          "overflow-hidden rounded-md bg-card/70 transition-colors hover:border-primary/40 hover:bg-card/90 [&_[data-slot=card-footer]]:rounded-b-md [&_[data-slot=card-header]]:rounded-t-md",
           viewMode === "grid" ? "min-h-48" : "min-h-0",
         )}
       >

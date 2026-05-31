@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
+import { AnimatePresence, m } from "motion/react"
 import {
   ExternalLinkIcon,
   LoaderCircleIcon,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { appMotionTransition } from "@/features/app-shell/components/app-motion"
 import { usePomodoroTimer } from "@/features/pomodoro/components/pomodoro-provider"
 import {
   formatPomodoroMode,
@@ -44,9 +46,7 @@ export function PomodoroFloatingTimer() {
   const isActive = isRunning || isPaused
   const hasPendingSave = Boolean(pomodoroTimer.pendingSessionSave)
 
-  if (isOnPomodoroPage || (!isActive && !hasPendingSave)) {
-    return null
-  }
+  const shouldShow = !isOnPomodoroPage && (isActive || hasPendingSave)
 
   const durationSeconds = getPomodoroModeDurationSeconds(pomodoroTimer.mode)
   const progress = getTimerProgress(
@@ -73,10 +73,16 @@ export function PomodoroFloatingTimer() {
 
   return (
     <>
-      <aside
-        aria-live="polite"
-        className="fixed right-4 bottom-4 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-xl border bg-card/95 p-4 text-card-foreground shadow-2xl backdrop-blur sm:right-6 sm:bottom-6"
-      >
+      <AnimatePresence>
+        {shouldShow ? (
+          <m.aside
+            aria-live="polite"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={appMotionTransition}
+            className="fixed right-4 bottom-4 z-50 w-[calc(100vw-2rem)] max-w-sm rounded-xl border bg-card/95 p-4 text-card-foreground shadow-2xl backdrop-blur sm:right-6 sm:bottom-6"
+          >
         <div className="flex items-start gap-3">
           <div
             className={cn(
@@ -178,7 +184,9 @@ export function PomodoroFloatingTimer() {
             </div>
           </div>
         </div>
-      </aside>
+          </m.aside>
+        ) : null}
+      </AnimatePresence>
 
       <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <AlertDialogContent>

@@ -61,7 +61,7 @@ export function AnnotationToolbar({
                 key={color}
                 type="button"
                 className={cn(
-                  "grid size-8 place-items-center rounded-full border shadow-sm transition-transform hover:scale-105",
+                  "grid size-8 place-items-center rounded-full border shadow-sm",
                   highlightColor === color && "ring-2 ring-ring ring-offset-2",
                 )}
                 style={{ backgroundColor: color }}

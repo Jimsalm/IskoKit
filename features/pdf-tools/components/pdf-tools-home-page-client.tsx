@@ -9,6 +9,10 @@ import { pdfToolConfigs } from "@/features/pdf-tools/tool-config"
 import type { PdfToolCategory } from "@/features/pdf-tools/types"
 import { Button } from "@/components/ui/button"
 import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
+import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
@@ -93,7 +97,7 @@ export function PdfToolsHomePageClient() {
       </div>
 
       {visibleTools.length ? (
-        <div
+        <MotionList
           className={
             viewMode === "grid"
               ? "grid gap-4 md:grid-cols-2 xl:grid-cols-5"
@@ -101,9 +105,11 @@ export function PdfToolsHomePageClient() {
           }
         >
           {visibleTools.map((tool) => (
-            <PdfToolCard key={tool.id} tool={tool} viewMode={viewMode} />
+            <MotionListItem key={tool.id} className="h-full">
+              <PdfToolCard tool={tool} viewMode={viewMode} />
+            </MotionListItem>
           ))}
-        </div>
+        </MotionList>
       ) : null}
 
       <RecentFileActivity />

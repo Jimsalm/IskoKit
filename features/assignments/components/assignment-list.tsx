@@ -6,6 +6,10 @@ import { AssignmentCard } from "@/features/assignments/components/assignment-car
 import type { Assignment, AssignmentGroup } from "@/features/assignments/types"
 import { Button } from "@/components/ui/button"
 import {
+  MotionList,
+  MotionListItem,
+} from "@/features/app-shell/components/app-motion"
+import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -135,19 +139,20 @@ export function AssignmentList({
               </p>
             </div>
 
-            <div className="grid gap-3">
+            <MotionList className="grid gap-3">
               {assignments.map((assignment) => (
-                <AssignmentCard
-                  key={assignment.id}
-                  assignment={assignment}
-                  now={now}
-                  isCompleting={isCompleting}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onComplete={onComplete}
-                />
+                <MotionListItem key={assignment.id}>
+                  <AssignmentCard
+                    assignment={assignment}
+                    now={now}
+                    isCompleting={isCompleting}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onComplete={onComplete}
+                  />
+                </MotionListItem>
               ))}
-            </div>
+            </MotionList>
           </section>
         )
       })}
